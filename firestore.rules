@@ -1,0 +1,141 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── helpers ──────────────────────────────────────────────────────────────
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Safe field accessor that returns a default when the field is absent.
+    function field(data, key, fallback) {
+      return key in data ? data[key] : fallback;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN';
+    }
+
+    // ─── rides ────────────────────────────────────────────────────────────────
+    //
+    // Field contract (mirrors FirestoreRideRepository):
+    //   customerId  – UID of the rider who created the ride
+    //   driverId    – UID of the driver (absent until accepted)
+    //   status      – SEARCHING | ACCEPTED | ACTIVE | COMPLETED | CANCELLED | IDLE
+
+    match /rides/{rideId} {
+
+      // Riders see their own rides; drivers see rides assigned to them or any
+      // ride that is still searching (needed for the available-rides stream).
+      allow read: if isAdmin() || (isSignedIn() && (
+        resource.data.customerId == request.auth.uid ||
+        field(resource.data, 'driverId', '') == request.auth.uid ||
+        resource.data.status == 'SEARCHING'
+      ));
+
+      // A rider creates a ride and must stamp their own UID as customerId.
+      allow create: if isSignedIn() &&
+        request.resource.data.customerId == request.auth.uid;
+
+      allow update: if isSignedIn() && (
+
+        // ① Driver accepting a searching ride:
+        //    – ride must currently be SEARCHING with no driver yet
+        //    – the update must set driverId to the caller's UID
+        //    – immutable fields (customerId, pickup, destination) must not change
+        (
+          resource.data.status == 'SEARCHING' &&
+          field(resource.data, 'driverId', '') == '' &&
+          request.resource.data.get('driverId', '') == request.auth.uid &&
+          request.resource.data.customerId == resource.data.customerId
+        ) ||
+
+        // ② Assigned driver updating an in-progress ride
+        //    (location, status transitions, ETA, fare, finalize, payment).
+        field(resource.data, 'driverId', '') == request.auth.uid ||
+
+        // ③ Rider updating their own ride
+        //    (customer location, payment status) — always allowed.
+        //    Cancellation is only allowed when the ride is still SEARCHING;
+        //    once a driver has accepted the ride the rider may no longer cancel.
+        (
+          resource.data.customerId == request.auth.uid && (
+            request.resource.data.status == resource.data.status ||
+            (request.resource.data.status == 'CANCELLED' && resource.data.status == 'SEARCHING')
+          )
+        )
+      );
+
+      allow delete: if false;
+
+      // ─── in-ride chat ──────────────────────────────────────────────────────
+      //
+      // Only the rider and the assigned driver may read or send messages.
+      // senderId must match the caller's UID on create.
+      // Messages are immutable once sent.
+
+      match /messages/{messageId} {
+        function rideData() {
+          return get(/databases/$(database)/documents/rides/$(rideId)).data;
+        }
+
+        function isParticipant() {
+          let ride = rideData();
+          return isSignedIn() && (
+            ride.customerId == request.auth.uid ||
+            field(ride, 'driverId', '') == request.auth.uid
+          );
+        }
+
+        allow read: if isAdmin() || isParticipant();
+
+        allow create: if isParticipant() &&
+          request.resource.data.senderId == request.auth.uid &&
+          request.resource.data.keys().hasAll(['text', 'senderId', 'timestamp']);
+
+        allow update, delete: if false;
+      }
+    }
+
+    // ─── users ────────────────────────────────────────────────────────────────
+    //
+    // Any authenticated user may read any user document (needed when a driver
+    // fetches a rider's profile, or vice-versa).
+    // The owner may write their own document; admin may update/delete any user
+    // (needed for driver approval and rejection).
+
+    match /users/{userId} {
+      allow read:   if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      // Clients may update their own document, but may never increase rideCredits
+      // (credits are only incremented server-side via Cloud Functions / Admin SDK).
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        (
+          request.auth.uid == userId &&
+          (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['rideCredits']) ||
+            request.resource.data.rideCredits <= resource.data.rideCredits
+          )
+        )
+      );
+      allow delete: if isAdmin();
+    }
+
+    // ─── ratings ──────────────────────────────────────────────────────────────
+    //
+    // Any authenticated user may read ratings (driver profiles show them).
+    // A user may only submit a rating as themselves (fromUserId == their UID).
+    // Ratings are immutable once written.
+
+    match /ratings/{ratingId} {
+      allow read:          if isSignedIn();
+      allow create:        if isSignedIn() &&
+                              request.resource.data.fromUserId == request.auth.uid;
+      allow update, delete: if false;
+    }
+  }
+}

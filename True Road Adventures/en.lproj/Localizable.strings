@@ -1,0 +1,670 @@
+/* ===== WELCOME / AUTH FLOW ===== */
+"welcome.cta.phone" = "By phone number";
+"welcome.cta.google" = "Sign in with Google";
+"welcome.cta.apple" = "Sign in with Apple";
+"welcome.cta.email" = "Sign in with email";
+"welcome.no_account" = "Don't have an account?";
+"welcome.register" = "Sign up";
+"welcome.legal.pre" = "By continuing you agree to our";
+"welcome.legal.and" = "and";
+"welcome.terms" = "Terms of Service";
+"welcome.privacy" = "Privacy Policy";
+"welcome.or" = "OR";
+"register.legal.pre" = "By registering you agree to our";
+"register.legal.and" = "and";
+
+/* ===== LOGIN ===== */
+"login.title" = "Welcome back";
+"login.email.placeholder" = "Email address";
+"login.password.placeholder" = "Password";
+"login.forgot_password" = "Forgot password?";
+"login.cta" = "Sign in";
+"login.google" = "Sign in with Google";
+"login.apple" = "Sign in with Apple";
+"login.reset.alert.title" = "Forgot password";
+"login.reset.alert.body" = "Enter your email address. You will receive a link to reset your password.";
+"login.reset.email.placeholder" = "Email address";
+"login.reset.cancel" = "Cancel";
+"login.reset.send" = "Send";
+"login.reset.success.title" = "Email sent";
+"login.reset.success.body" = "Check your inbox for the reset link.";
+"login.ok" = "OK";
+
+/* ===== REGISTER ===== */
+"register.title" = "Create account";
+"register.name.placeholder" = "Full name";
+"register.email.placeholder" = "Email address";
+"register.password.placeholder" = "Password (min. 6 characters)";
+"register.referral.placeholder" = "Referral code (optional)";
+"register.cta" = "Create account";
+"register.terms" = "Terms of Service";
+"register.privacy" = "Privacy Policy";
+
+/* ===== PHONE AUTH ===== */
+"phone.title.step1" = "Enter your phone number";
+"phone.title.step2" = "Enter code";
+"phone.step1.label" = "Step 1 of 2";
+"phone.step2.label" = "Step 2 of 2";
+"phone.step1.placeholder" = "612345678";
+"phone.step1.subtitle" = "You will receive an SMS code to verify your number.";
+"phone.step1.cta" = "Send code";
+"phone.step2.field.title" = "Verification code";
+"phone.step2.placeholder" = "123456";
+"phone.step2.subtitle" = "Enter the 6-digit code we sent to %@";
+"phone.step2.cta" = "Verify";
+"phone.step2.resend" = "Resend code";
+"phone.country.nl" = "Netherlands";
+"phone.country.be" = "Belgium";
+"phone.country.de" = "Germany";
+"phone.country.fr" = "France";
+"phone.country.gb" = "United Kingdom";
+"phone.country.us" = "United States";
+"phone.country.es" = "Spain";
+"phone.country.it" = "Italy";
+"phone.country.pl" = "Poland";
+"phone.country.tr" = "Turkey";
+"phone.country.ma" = "Morocco";
+"phone.country.ng" = "Nigeria";
+
+/* ===== SPLASH ===== */
+"splash.tagline.rider" = "Your ride, your adventure";
+"splash.tagline.driver" = "Drive. Earn. Enjoy.";
+"splash.made_in" = "Made in the Netherlands 🇳🇱";
+
+/* ===== PERMISSIONS ONBOARDING ===== */
+"permissions.title" = "True Road Adventures";
+"permissions.subtitle" = "Almost ready to ride";
+"permissions.skip" = "Skip";
+"permissions.location.title" = "Location access";
+"permissions.location.body" = "We use your location to request rides and find the nearest driver.";
+"permissions.location.cta" = "Allow location";
+"permissions.notifications.title" = "Notifications";
+"permissions.notifications.body" = "Receive real-time updates about your ride, like when your driver is on the way.";
+"permissions.notifications.cta" = "Allow notifications";
+
+/* ===== RIDER TABS ===== */
+"tab.home" = "Home";
+"tab.rides" = "Rides";
+"tab.profile" = "Profile";
+
+/* ===== RIDER HOME ===== */
+"rider.home.search.placeholder" = "Where to?";
+"rider.home.plan_ride" = "Plan a ride";
+"rider.home.saved.home" = "Home";
+"rider.home.saved.home.empty" = "Add your home address";
+"rider.home.saved.work" = "Work";
+"rider.home.saved.work.empty" = "Add your work address";
+"rider.home.service.standard" = "Standard";
+"rider.home.service.comfort" = "Comfort";
+"rider.home.service.xl" = "XL";
+"rider.home.service.green" = "Green";
+"rider.home.active_ride" = "Active ride";
+"rider.home.destination" = "Destination";
+"rider.home.eta" = "ETA: %@ min";
+"rider.home.cancel" = "Cancel";
+"rider.home.chat" = "Chat";
+
+/* ===== RIDER RIDE REQUEST ===== */
+"ride_request.title" = "Request ride";
+"ride_request.pickup" = "Pickup location";
+"ride_request.destination" = "Destination";
+"ride_request.estimate.loading" = "Calculating fare estimate…";
+"ride_request.estimate.enter_destination" = "Enter a destination for an estimate";
+"ride_request.estimate.unavailable" = "Estimate unavailable";
+"ride_request.estimate.label" = "Estimate: SRD %.0f";
+"ride_request.estimate.wait_surcharge" = "+ SRD 3.33/min while waiting";
+"ride_request.schedule" = "Schedule ride";
+"ride_request.schedule.datetime" = "Date & time";
+"ride_request.current_location" = "Current location";
+"ride_request.no_internet" = "No internet connection. Please try again.";
+"ride_request.cta" = "Request ride";
+"ride_request.error" = "Error";
+"ride_request.ok" = "OK";
+
+/* ===== ACTIVE RIDE (RIDER) ===== */
+"active_ride.driver_preparing" = "Driver is preparing navigation…";
+"active_ride.total" = "Total to pay";
+"active_ride.eta.unit" = "min";
+"active_ride.driver.fallback" = "Driver";
+"active_ride.dash" = "–";
+"active_ride.action.chat" = "Chat";
+"active_ride.action.call" = "Call";
+"active_ride.action.share" = "Share";
+"active_ride.action.cancel" = "Cancel";
+"active_ride.share.text" = "I'm taking a ride from %@ to %@ via True Road Adventures.";
+"active_ride.share.pickup_fallback" = "Pickup location";
+"active_ride.share.destination_fallback" = "Destination";
+
+/* ===== RIDE COMPLETION ===== */
+"completion.title" = "Ride complete!";
+"completion.fare" = "Final fare";
+"completion.distance" = "Distance";
+"completion.duration" = "Trip time";
+"completion.driver" = "Your driver";
+"completion.driver.fallback" = "Driver";
+"completion.rating.title" = "How was your ride?";
+"completion.rating.note.placeholder" = "Note (optional)";
+"completion.rating.submit" = "Submit rating";
+"completion.skip" = "Skip";
+"completion.tag.friendly" = "Friendly";
+"completion.tag.punctual" = "Punctual";
+"completion.tag.clean_car" = "Clean car";
+"completion.tag.good_driver" = "Good driver";
+"completion.score.1" = "Very poor";
+"completion.score.2" = "Poor";
+"completion.score.3" = "Fair";
+"completion.score.4" = "Good";
+"completion.score.5" = "Excellent";
+
+/* ===== RIDE DETAIL (RIDER) ===== */
+"ride_detail.title" = "Ride details";
+"ride_detail.pickup" = "Pickup";
+"ride_detail.pickup.unknown" = "Pickup location unknown";
+"ride_detail.destination" = "Destination";
+"ride_detail.destination.unknown" = "Destination unknown";
+"ride_detail.scheduled" = "Scheduled: %@";
+"ride_detail.distance" = "Distance";
+"ride_detail.fare.final" = "Final fare";
+"ride_detail.fare.estimated" = "Estimated fare";
+"ride_detail.payment" = "Payment";
+"ride_detail.cancel.cta" = "Cancel ride";
+"ride_detail.cancel.title" = "Cancel ride?";
+"ride_detail.cancel.confirm" = "Are you sure you want to cancel this ride?";
+"ride_detail.cancel.button" = "Cancel";
+"ride_detail.back" = "Back";
+"ride_detail.rating.title" = "Rate ride";
+"ride_detail.rating.question" = "How was your ride?";
+"ride_detail.rating.note.placeholder" = "Note (optional)";
+"ride_detail.rating.submit" = "Send rating";
+"ride_detail.rating.cancel" = "Cancel";
+"ride_detail.rating.nav" = "Rating";
+"ride_detail.rating.sent" = "Rating sent";
+"ride_detail.payment.pending" = "Pending";
+"ride_detail.payment.paid" = "Paid";
+"ride_detail.payment.failed" = "Failed";
+"ride_detail.payment.cash" = "Cash";
+
+/* ===== RIDE HISTORY ===== */
+"ride_history.title" = "My rides";
+"ride_history.empty.title" = "No rides";
+"ride_history.empty.body" = "You haven't taken any rides yet";
+"ride_history.empty.cta" = "Plan a ride";
+"ride_history.destination.unknown" = "Destination unknown";
+"ride_history.filter.all" = "All";
+"ride_history.filter.scheduled" = "Scheduled";
+"ride_history.filter.completed" = "Completed";
+
+/* ===== RIDER DRAWER ===== */
+"drawer.user.fallback" = "User";
+"drawer.update.title" = "Update available";
+"drawer.update.body" = "Version 2.0 is now available";
+"drawer.menu.home" = "Home";
+"drawer.menu.rides" = "My rides";
+"drawer.menu.favorites" = "Favorites";
+"drawer.menu.payment" = "Payment";
+"drawer.menu.promotions" = "Promotions";
+"drawer.menu.safety" = "Safety";
+"drawer.menu.profile" = "Profile";
+"drawer.menu.support" = "Help & Support";
+"drawer.menu.about" = "About";
+"drawer.menu.logout" = "Sign out";
+"drawer.new.badge" = "NEW";
+"drawer.become_driver" = "Become a driver";
+"drawer.become_driver.subtitle" = "Earn money as a True Road driver";
+
+/* ===== RIDER PROFILE ===== */
+"rider.profile.referral.title" = "Earn free rides";
+"rider.profile.referral.subtitle" = "Invite friends and receive discounts";
+"rider.profile.section.account" = "Account";
+"rider.profile.section.more" = "More";
+"rider.profile.row.personal" = "Personal info";
+"rider.profile.row.payment" = "Payment info";
+"rider.profile.row.saved_places" = "Saved places";
+"rider.profile.row.preferences" = "Preferences";
+"rider.profile.row.promotions" = "Promotions";
+"rider.profile.row.safety" = "Safety";
+"rider.profile.row.support" = "Help & Support";
+"rider.profile.row.about" = "About";
+"rider.profile.delete.row" = "Delete account";
+"rider.profile.delete.title" = "Delete account";
+"rider.profile.delete.body" = "Are you sure you want to delete your account? This cannot be undone.";
+"rider.profile.delete.cancel" = "Cancel";
+"rider.profile.delete.confirm" = "Delete";
+"rider.profile.user.fallback" = "User";
+
+/* ===== RIDER PERSONAL INFO ===== */
+"personal_info.title" = "Personal info";
+"personal_info.name.placeholder" = "Full name";
+"personal_info.email.placeholder" = "Email address";
+"personal_info.phone.placeholder" = "Phone number";
+"personal_info.save" = "Save";
+"personal_info.change_photo" = "Change photo";
+
+/* ===== RIDER PREFERENCES ===== */
+"preferences.title" = "Preferences";
+"preferences.section.notifications" = "Notifications";
+"preferences.notifications.rides.title" = "Ride notifications";
+"preferences.notifications.rides.subtitle" = "Receive updates about your ride";
+"preferences.notifications.promo.title" = "Promotions";
+"preferences.notifications.promo.subtitle" = "Receive offers and discounts";
+"preferences.section.app" = "App settings";
+"preferences.language" = "Language";
+"preferences.currency" = "Currency";
+"preferences.saving" = "Saving...";
+"preferences.language.picker.title" = "Choose language";
+"preferences.language.cancel" = "Cancel";
+"preferences.lang.nl" = "Nederlands";
+"preferences.lang.en" = "English";
+"preferences.lang.de" = "Deutsch";
+"preferences.lang.fr" = "Français";
+
+/* ===== RIDER PAYMENT INFO ===== */
+"payment.title" = "Payment info";
+"payment.section.methods" = "Payment methods";
+"payment.default" = "Default";
+"payment.section.history" = "Payment history";
+"payment.history.all" = "View all transactions";
+"payment.add" = "Add payment method";
+"payment.error" = "Error";
+"payment.ok" = "OK";
+
+/* ===== RIDER SAVED PLACES ===== */
+"saved_places.title" = "Saved places";
+"saved_places.home" = "Home";
+"saved_places.home.placeholder" = "Home address";
+"saved_places.home.add" = "Add your home address";
+"saved_places.home.field" = "Add home address";
+"saved_places.work" = "Work";
+"saved_places.work.placeholder" = "Work address";
+"saved_places.work.add" = "Add your work address";
+"saved_places.work.field" = "Add work address";
+"saved_places.add_location" = "Add location";
+"saved_places.save" = "Save";
+"saved_places.delete" = "Delete";
+"saved_places.cancel" = "Cancel";
+
+/* ===== RIDER PROMOTIONS ===== */
+"promotions.title" = "Promotions";
+"promotions.code.placeholder" = "Enter code";
+"promotions.code.cta" = "Apply";
+"promotions.active.title" = "Active promotions";
+"promotions.success.title" = "Success!";
+"promotions.invalid.title" = "Invalid";
+"promotions.ok" = "OK";
+"promotions.success.body" = "Code '%@' applied! Discount will be applied to your next ride.";
+"promotions.invalid.body" = "The code '%@' is not valid or has already been used.";
+
+/* ===== RIDER SAFETY INFO ===== */
+"safety.title" = "Safety";
+"safety.emergency.title" = "Emergency button";
+"safety.emergency.body" = "In case of emergency, contact emergency services immediately. Press the emergency button in the ride view.";
+"safety.location.title" = "Share location";
+"safety.location.body" = "Share your ride location with family and friends for extra safety.";
+"safety.rating.title" = "Rate your driver";
+"safety.rating.body" = "Help us improve quality by rating your driver after each ride.";
+"safety.support.title" = "24/7 support";
+"safety.support.body" = "Our support team is available day and night for questions and emergencies.";
+"safety.emergency.alert.title" = "Call 112?";
+"safety.emergency.alert.body" = "You are about to call emergency services. Are you sure you want to proceed?";
+"safety.emergency.alert.call" = "Call 112";
+"safety.emergency.alert.cancel" = "Cancel";
+"safety.emergency.cta" = "Emergency – Call 112";
+"safety.support.chat" = "Chat with support";
+"safety.support.call" = "Call support";
+
+/* ===== CHAT ===== */
+"chat.title" = "Chat";
+"chat.ride_prefix" = "Ride #%@";
+"chat.message.placeholder" = "Message...";
+
+/* ===== SUPPORT ===== */
+"support.title" = "Help & Support";
+"support.search.placeholder" = "Search for help...";
+"support.more.title" = "More questions?";
+"support.contact.chat" = "Chat with support";
+"support.contact.call" = "Call us";
+"support.contact.cta" = "Contact us";
+"support.close" = "Close";
+"support.topic.payment" = "Payment & Refunds";
+"support.topic.promotions" = "Promotions & Discounts";
+"support.topic.safety" = "Safety";
+"support.topic.privacy" = "Privacy & Data";
+"support.topic.saved_places" = "Saved places";
+"support.topic.language" = "Language & Region";
+"support.topic.account" = "Account management";
+"support.topic.ride_issues" = "Ride issues";
+"support.body.payment" = "Payments are processed securely. Contact us if you see an unexpected charge or want to request a refund.";
+"support.body.promotions" = "Have a promo code? Enter it at Profile → Promotions. Codes are single-use and non-transferable.";
+"support.body.safety" = "Feeling unsafe? Use the emergency button in the ride view to call 112. You can also share your ride with trusted contacts.";
+"support.body.privacy" = "We only store data necessary for the service. Read our privacy policy for more information.";
+"support.body.saved_places" = "Save your home and work address via Profile → Saved places for faster booking.";
+"support.body.language" = "Change the app language via Profile → Preferences → Language.";
+"support.body.account" = "Delete your account via Profile → Delete account. This permanently removes all your data.";
+"support.body.ride_issues" = "Issue with a ride? Contact us via chat or call our support. Include your ride number for faster handling.";
+
+/* ===== ABOUT ===== */
+"about.title" = "About";
+"about.app_name" = "True Road Adventures";
+"about.version" = "Version 1.0.1 (2)";
+"about.developer.title" = "Developer";
+"about.developer.name" = "True Road Adventures B.V.";
+"about.country.title" = "Country";
+"about.country.name" = "Netherlands 🇳🇱";
+"about.license.title" = "License";
+"about.license.body" = "© 2025 True Road Adventures";
+"about.terms" = "Terms of Service";
+"about.privacy" = "Privacy Policy";
+"about.website" = "Visit website";
+
+/* ===== DRIVER HOME ===== */
+"driver.home.active_ride" = "Active ride";
+"driver.home.available_rides" = "Available rides";
+"driver.home.no_rides" = "No rides available";
+"driver.home.no_rides.subtitle" = "Waiting for new ride requests from customers";
+"driver.home.no_internet" = "No internet connection";
+"driver.home.destination" = "Destination";
+"driver.home.pickup" = "Pickup location";
+"driver.home.open_nav" = "Open navigation";
+"driver.home.accept" = "Accept";
+"driver.home.status.ready" = "Driver ready";
+"driver.home.status.online" = "Driver online";
+"driver.home.status.offline" = "Driver offline";
+"driver.home.status.accepted" = "Ride accepted";
+"driver.home.status.offline_failed" = "Offline: accept failed";
+"driver.home.status.failed" = "Failed: %@";
+"driver.home.status.update_failed" = "Status update failed";
+"driver.home.online" = "Online";
+"driver.home.offline" = "Offline";
+"driver.home.you_are_offline" = "You are offline";
+"driver.home.offline.subtitle" = "Go online to receive ride requests";
+"driver.home.driver.fallback" = "Driver";
+
+/* ===== INCOMING RIDE (DRIVER) ===== */
+"incoming_ride.title" = "New ride!";
+"incoming_ride.countdown" = "Respond within %d seconds";
+"incoming_ride.pickup" = "Pickup location";
+"incoming_ride.destination" = "Destination";
+"incoming_ride.scheduled" = "Scheduled for";
+"incoming_ride.fare" = "Estimated fare";
+"incoming_ride.decline" = "Decline";
+"incoming_ride.accept" = "Accept";
+"incoming_ride.accept_failed.title" = "Accept failed";
+"incoming_ride.ok" = "OK";
+"incoming_ride.no_internet" = "No internet connection. Check your connection and try again.";
+
+/* ===== DRIVER ACTIVE RIDE ===== */
+"driver_active.calculating" = "Calculating route…";
+"driver_active.recalculating" = "Recalculating…";
+"driver_active.speed.unit" = "km/h";
+"driver_active.pickup" = "Pickup location";
+"driver_active.destination" = "Destination";
+"driver_active.chat" = "Chat";
+"driver_active.wait.surcharge" = " · SRD 3.33/min waiting";
+"driver_active.wait.stop" = "Stop wait";
+"driver_active.wait.start" = "Wait";
+"driver_active.arrived" = "I'm at the customer";
+"driver_active.picked_up" = "Passenger picked up";
+"driver_active.complete" = "Complete ride";
+"driver_active.open_nav" = "Open navigation";
+
+/* ===== DRIVER RIDE DETAIL ===== */
+"driver_ride_detail.title" = "Ride details";
+"driver_ride_detail.pickup" = "Pickup";
+"driver_ride_detail.unknown" = "Unknown";
+"driver_ride_detail.destination" = "Destination";
+"driver_ride_detail.scheduled" = "Scheduled for";
+"driver_ride_detail.passenger" = "Passenger";
+"driver_ride_detail.fare" = "Estimated fare";
+"driver_ride_detail.accept" = "Accept ride";
+"driver_ride_detail.decline" = "Decline";
+
+/* ===== DRIVER PROFILE ===== */
+"driver.profile.driver.fallback" = "Driver";
+"driver.profile.stat.rides" = "Rides";
+"driver.profile.stat.rating" = "Rating";
+"driver.profile.stat.acceptance" = "Acceptance";
+"driver.profile.section.account" = "Account";
+"driver.profile.section.activity" = "Activity";
+"driver.profile.section.more" = "More";
+"driver.profile.row.personal" = "Personal info";
+"driver.profile.row.vehicle" = "Vehicle info";
+"driver.profile.row.documents" = "Documents";
+"driver.profile.row.reviews" = "Reviews";
+"driver.profile.row.earnings" = "Earnings";
+"driver.profile.row.support" = "Help & Support";
+"driver.profile.row.about" = "About";
+"driver.profile.logout" = "Sign out";
+"driver.profile.delete" = "Delete account";
+"driver.profile.delete.title" = "Delete account";
+"driver.profile.delete.body" = "Are you sure you want to delete your account? This cannot be undone.";
+"driver.profile.delete.cancel" = "Cancel";
+"driver.profile.delete.confirm" = "Delete";
+
+/* ===== DRIVER PERSONAL INFO ===== */
+"driver.personal.title" = "Personal info";
+"driver.personal.name.placeholder" = "Full name";
+"driver.personal.email.placeholder" = "Email address";
+"driver.personal.phone.placeholder" = "Phone number";
+"driver.personal.save" = "Save";
+"driver.personal.change_photo" = "Change photo";
+"driver.personal.password.cta" = "Change password";
+"driver.personal.password.current" = "Current password";
+"driver.personal.password.new" = "New password";
+"driver.personal.password.confirm" = "Confirm password";
+"driver.personal.password.success" = "Password changed successfully";
+"driver.personal.password.title" = "Change password";
+
+/* ===== DRIVER VEHICLE ===== */
+"driver.vehicle.title" = "Vehicle info";
+"driver.vehicle.brand.placeholder" = "Make (e.g. Toyota)";
+"driver.vehicle.model.placeholder" = "Model (e.g. Prius)";
+"driver.vehicle.year.placeholder" = "Year";
+"driver.vehicle.plate.placeholder" = "License plate";
+"driver.vehicle.save" = "Save";
+
+/* ===== DRIVER DOCUMENTS ===== */
+"driver.documents.title" = "Documents";
+"driver.documents.license" = "Driver's license";
+"driver.documents.registration" = "Vehicle registration";
+"driver.documents.insurance" = "Insurance certificate";
+"driver.documents.verified" = "Verified";
+"driver.documents.upload_required" = "Upload required";
+"driver.documents.uploading" = "Uploading...";
+"driver.documents.upload_failed" = "Upload failed: %@";
+
+/* ===== DRIVER REVIEWS ===== */
+"driver.reviews.title" = "Reviews";
+"driver.reviews.count" = "%d reviews";
+"driver.reviews.empty.title" = "No reviews yet";
+"driver.reviews.empty.body" = "Reviews will appear here after passengers rate your ride";
+
+/* ===== DRIVER INCOMING RIDE ===== */
+"driver.incoming.new_ride" = "New ride!";
+"driver.incoming.respond_seconds" = "Respond within %d seconds";
+"driver.incoming.pickup" = "Pick-up";
+"driver.incoming.pickup_fallback" = "Pick-up location";
+"driver.incoming.destination" = "Destination";
+"driver.incoming.destination_fallback" = "Destination";
+"driver.incoming.scheduled_for" = "Scheduled for";
+"driver.incoming.estimated_fare" = "Estimated fare";
+"driver.incoming.decline" = "Decline";
+"driver.incoming.accept" = "Accept";
+"driver.incoming.error_title" = "Failed to accept";
+"driver.incoming.error_offline" = "No internet connection. Check your connection and try again.";
+
+/* ===== DRIVER EARNINGS ===== */
+"driver.earnings.title" = "Earnings";
+"driver.earnings.this_month" = "This month";
+"driver.earnings.rides_completed" = "%d rides completed";
+"driver.earnings.section.overview" = "Overview";
+"driver.earnings.period.this_week" = "This week";
+"driver.earnings.period.last_week" = "Last week";
+"driver.earnings.period.last_month" = "Last month";
+
+/* ===== AUTH ERRORS ===== */
+"auth.error.not_found" = "Account not found";
+"auth.error.wrong_password" = "Incorrect password";
+"auth.error.already_exists" = "Already exists";
+"auth.error.unknown_email" = "Unknown email address";
+"auth.error.not_authenticated" = "Not signed in";
+"auth.error.current_password_wrong" = "Current password is incorrect";
+"auth.error.no_refresh_token" = "No refresh token available";
+"auth.error.missing_token" = "Authentication token missing";
+"auth.error.google_token_missing" = "Google token missing";
+"auth.error.apple_credential_missing" = "Apple credential missing";
+
+/* ===== CURRENCY FORMAT ===== */
+"format.currency" = "SRD %.2f";
+"format.currency.rounded" = "SRD %.0f";
+"format.distance" = "%.1f km";
+"format.eta" = "Arrival ~%@";
+
+/* ===== COMMON ===== */
+"common.unknown" = "Unknown";
+"common.offline_banner" = "No internet connection";
+"action.call" = "Call";
+"action.share" = "Share";
+"action.cancel_short" = "Cancel";
+"action.chat" = "Chat";
+
+/* ===== ROUTE LABELS ===== */
+"route.pickup" = "Pick-up";
+"route.destination" = "Destination";
+"route.distance" = "Distance";
+"route.scheduled_for" = "Scheduled for";
+"route.pickup_unknown" = "Pick-up location unknown";
+"route.destination_unknown" = "Destination unknown";
+"route.pickup_fallback" = "Pick-up location";
+"route.destination_fallback" = "Destination";
+
+/* ===== FARE / PAYMENT ===== */
+"fare.estimated_label" = "Estimated fare";
+"fare.final_label" = "Final fare";
+"payment.title" = "Payment";
+"payment.pending" = "Pending";
+"payment.paid" = "Paid";
+"payment.failed" = "Failed";
+"payment.cash" = "Cash";
+
+/* ===== RIDE DETAIL ===== */
+"ride.detail.title" = "Ride details";
+"ride.detail.accept" = "Accept ride";
+"ride.detail.passenger" = "Passenger";
+"ride.detail.scheduled" = "Scheduled: %@";
+"ride.cancel.button" = "Cancel ride";
+"ride.cancel.title" = "Cancel ride?";
+"ride.cancel.message" = "Are you sure you want to cancel this ride?";
+"ride.cancel.confirm" = "Cancel";
+"ride.cancel.back" = "Back";
+"ride.rate.button" = "Rate ride";
+"ride.rate.submitted" = "Rating submitted";
+"ride.rate.how_was_ride" = "How was your ride?";
+"ride.rate.placeholder" = "Comment (optional)";
+"ride.rate.submit" = "Submit rating";
+"ride.rate.title" = "Rating";
+
+/* ===== SCORE LABELS ===== */
+"score.1" = "Very bad";
+"score.2" = "Bad";
+"score.3" = "Average";
+"score.4" = "Good";
+"score.5" = "Excellent";
+
+/* ===== ACTIVE RIDE (DRIVER) ===== */
+"active.ride.calculating_route" = "Calculating route…";
+"active.ride.rerouting" = "Recalculating…";
+"active.ride.speed_unit" = "km/h";
+"active.ride.waiting" = "Waiting: %@";
+"active.ride.wait_rate" = "SRD 3.33/min waiting";
+"active.ride.stop_wait" = "Stop waiting";
+"active.ride.start_wait" = "Wait";
+"active.ride.arrived_customer" = "I'm at the customer";
+"active.ride.passenger_picked_up" = "Passenger picked up";
+"active.ride.complete_ride" = "Complete ride";
+"active.ride.eta" = "Arrival ~%1$@ · %2$d min";
+
+/* ===== ACTIVE RIDE (RIDER) ===== */
+"active.ride.driver_preparing" = "Driver preparing navigation…";
+"active.ride.total_to_pay" = "Total to pay";
+"active.ride.driver_fallback" = "Driver";
+"active.ride.share_text" = "I'm taking a ride from %1$@ to %2$@ via True Road Adventures.";
+
+/* ===== RIDE REQUEST ===== */
+"ride.request.title" = "Request ride";
+"ride.request.button" = "Request ride";
+"ride.request.fare_estimate" = "Estimate: SRD %.0f";
+"ride.request.wait_rate" = "+ SRD 3.33/min waiting";
+"ride.request.calculating_fare" = "Calculating fare estimate…";
+"ride.request.enter_destination" = "Enter a destination for an estimate";
+"ride.request.estimate_unavailable" = "Estimate unavailable";
+"ride.request.schedule_toggle" = "Schedule ride";
+"ride.request.date_time" = "Date & time";
+"ride.request.offline_error" = "No internet connection. Try again.";
+"ride.request.current_location" = "Current location";
+"ride.request.error_title" = "Error";
+
+/* ===== RIDE COMPLETION ===== */
+"completion.ride_completed" = "Ride completed!";
+"completion.ride_time" = "Ride time";
+"completion.your_driver" = "Your driver";
+"completion.feedback.friendly" = "Friendly";
+"completion.feedback.punctual" = "On time";
+"completion.feedback.clean_car" = "Clean car";
+"completion.feedback.good_driver" = "Good driver";
+"completion.submit_rating" = "Submit rating";
+"completion.skip" = "Skip";
+"completion.thank_you_name" = "Thank you, %@!";
+"completion.review_encouragement" = "A rating would be greatly appreciated";
+
+/* ===== RIDER HOME ===== */
+"home.where_to" = "Where to?";
+"home.schedule_ride" = "Schedule a ride";
+"home.home_label" = "Home";
+"home.home_add" = "Add your home address";
+"home.work_label" = "Work";
+"home.work_add" = "Add your work address";
+"home.active_ride" = "Active ride";
+"home.eta" = "ETA: %d min";
+"home.service.standard" = "Standard";
+"home.service.comfort" = "Comfort";
+"home.service.xl" = "XL";
+"home.service.green" = "Green";
+
+/* ===== DRIVER HOME ===== */
+"driver.home.online" = "Online";
+"driver.home.offline" = "Offline";
+"driver.home.available_rides" = "Available rides";
+"driver.home.no_rides_title" = "No rides available";
+"driver.home.no_rides_body" = "Waiting for new ride requests from customers";
+"driver.home.active_ride" = "Active ride";
+"driver.home.open_navigation" = "Open navigation";
+"driver.home.you_are_offline" = "You are offline";
+"driver.home.go_online" = "Go online to receive ride requests";
+
+"driver.status.ready" = "Driver ready";
+"driver.status.online" = "Driver online";
+"driver.status.offline" = "Driver offline";
+"driver.status.accepted" = "Ride accepted";
+"driver.status.accept_failed_offline" = "Offline: accept failed";
+"driver.status.accept_failed" = "Failed: %@";
+"driver.status.updated" = "Status: %@";
+"driver.status.update_failed" = "Status update failed";
+
+/* ===== DRIVER PENDING APPROVAL ===== */
+"driver.pending.title" = "Account under review";
+"driver.pending.body" = "Your application is being reviewed by an administrator. You will be notified once your account is approved.";
+
+/* ===== ADMIN ===== */
+"admin.tab.rides" = "Rides";
+"admin.tab.drivers" = "Drivers";
+"admin.tab.profile" = "Profile";
+"admin.rides.title" = "All rides";
+"admin.drivers.title" = "Drivers";
+"admin.drivers.pending" = "Pending approval";
+"admin.drivers.empty" = "No applications";
+"admin.drivers.empty.body" = "There are currently no pending driver applications.";
+"admin.drivers.approve" = "Approve";
+"admin.drivers.reject" = "Reject";
+"admin.drivers.reject.confirm" = "Are you sure you want to reject this driver? This will delete their account.";
+"admin.profile.title" = "Profile";
+"active.ride.your_passenger" = "Your passenger";

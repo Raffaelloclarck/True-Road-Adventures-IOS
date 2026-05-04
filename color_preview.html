@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>True Road Adventures – Kleur Opties</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bolt:    #34D186;
+    --teal:    #00C9A7;
+    --orange:  #FF6B35;
+    --indigo:  #6C63FF;
+    --amber:   #F59E0B;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0d0d0d;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    min-height: 100vh;
+    padding: 40px 24px;
+    color: white;
+    min-width: 320px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 52px;
+  }
+
+  header h1 {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+    margin-bottom: 12px;
+  }
+
+  header h2 {
+    font-size: 32px;
+    font-weight: 800;
+    color: white;
+    letter-spacing: -1px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .card {
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 24px 48px rgba(0,0,0,0.5);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 32px 64px rgba(0,0,0,0.6);
+  }
+
+  .card-hero {
+    height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.25);
+  }
+
+  /* App icon mockup inside each card */
+  .mock-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+  }
+
+  .mock-icon svg {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Phone mockup */
+  .mock-phone {
+    width: 100px;
+    height: 160px;
+    border-radius: 16px;
+    background: #111;
+    border: 2px solid rgba(255,255,255,0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+  }
+
+  .phone-top {
+    height: 60%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px;
+  }
+
+  .phone-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    margin-bottom: 4px;
+  }
+
+  .phone-text-lg {
+    height: 6px;
+    border-radius: 3px;
+    width: 60px;
+    background: rgba(255,255,255,0.9);
+  }
+
+  .phone-text-sm {
+    height: 4px;
+    border-radius: 2px;
+    width: 44px;
+    background: rgba(255,255,255,0.4);
+  }
+
+  .phone-bottom {
+    height: 40%;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 8px;
+  }
+
+  .phone-btn {
+    height: 18px;
+    width: 70px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 5px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: 0.5px;
+  }
+
+  .phone-list-item {
+    height: 8px;
+    width: 70px;
+    border-radius: 4px;
+    background: #f0f0f0;
+  }
+
+  .card-body {
+    background: #1a1a1a;
+    padding: 20px 22px;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .card-name {
+    font-size: 18px;
+    font-weight: 800;
+    color: white;
+    letter-spacing: -0.4px;
+  }
+
+  .card-tag {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .tag-current {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.4);
+  }
+
+  .tag-recommended {
+    background: rgba(52,209,134,0.15);
+    color: #34D186;
+  }
+
+  .card-desc {
+    font-size: 13px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.45);
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+
+  .swatches {
+    display: flex;
+    gap: 8px;
+  }
+
+  .swatch {
+    flex: 1;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: rgba(0,0,0,0.6);
+  }
+
+  .swatch.light-text {
+    color: rgba(255,255,255,0.8);
+  }
+
+  /* === BOLT GREEN (current) === */
+  .bolt .card-hero { background: linear-gradient(135deg, #0F2B22 0%, #1a4a35 100%); }
+  .bolt .mock-icon { background: #0F2B22; }
+  .bolt .phone-top { background: linear-gradient(180deg, #0F2B22, #1a4a35); }
+  .bolt .phone-dot { background: #34D186; }
+  .bolt .phone-btn { background: #34D186; }
+
+  /* === ELECTRIC TEAL === */
+  .teal .card-hero { background: linear-gradient(135deg, #00251F 0%, #004d40 100%); }
+  .teal .mock-icon { background: #00251F; }
+  .teal .phone-top { background: linear-gradient(180deg, #00251F, #004d40); }
+  .teal .phone-dot { background: #00C9A7; }
+  .teal .phone-btn { background: #00C9A7; }
+
+  /* === ADVENTURE ORANGE === */
+  .orange .card-hero { background: linear-gradient(135deg, #1a0a04 0%, #3d1a0c 100%); }
+  .orange .mock-icon { background: #1F0E08; }
+  .orange .phone-top { background: linear-gradient(180deg, #1F0E08, #3d1a0c); }
+  .orange .phone-dot { background: #FF6B35; }
+  .orange .phone-btn { background: #FF6B35; }
+
+  /* === DEEP INDIGO === */
+  .indigo .card-hero { background: linear-gradient(135deg, #0D0B1F 0%, #1e1a45 100%); }
+  .indigo .mock-icon { background: #0D0B1F; }
+  .indigo .phone-top { background: linear-gradient(180deg, #0D0B1F, #1e1a45); }
+  .indigo .phone-dot { background: #6C63FF; }
+  .indigo .phone-btn { background: #6C63FF; }
+
+  /* === SUNRISE AMBER === */
+  .amber .card-hero { background: linear-gradient(135deg, #1C1208 0%, #3d2a08 100%); }
+  .amber .mock-icon { background: #1C1208; }
+  .amber .phone-top { background: linear-gradient(180deg, #1C1208, #3d2a08); }
+  .amber .phone-dot { background: #F59E0B; }
+  .amber .phone-btn { background: #F59E0B; }
+
+  .divider {
+    width: 1px;
+    height: 20px;
+    background: rgba(255,255,255,0.08);
+    margin: 0 4px;
+    align-self: center;
+    flex-shrink: 0;
+  }
+
+  footer {
+    text-align: center;
+    margin-top: 48px;
+    color: rgba(255,255,255,0.2);
+    font-size: 12px;
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>True Road Adventures</h1>
+  <h2>Kleur opties</h2>
+</header>
+
+<div class="grid">
+
+  <!-- BOLT GREEN (current) -->
+  <div class="card bolt">
+    <div class="card-hero">
+      <div class="mock-phone">
+        <div class="phone-top">
+          <div class="phone-dot"></div>
+          <div class="phone-text-lg"></div>
+          <div class="phone-text-sm"></div>
+        </div>
+        <div class="phone-bottom">
+          <div class="phone-list-item"></div>
+          <div class="phone-list-item"></div>
+          <div class="phone-btn" style="background:#34D186">RIDE</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-header">
+        <span class="card-name">Bolt Green</span>
+        <span class="card-tag tag-current">Huidig</span>
+      </div>
+      <p class="card-desc">Bekende kleur van Bolt. Werkt goed maar niet origineel voor een eigen merk.</p>
+      <div class="swatches">
+        <div class="swatch" style="background:#34D186">#34D186</div>
+        <div class="swatch" style="background:#1DB36A">#1DB36A</div>
+        <div class="swatch light-text" style="background:#0F2B22">#0F2B22</div>
+        <div class="swatch" style="background:#D4F5E6; color:rgba(0,0,0,0.5)">#D4F5E6</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ELECTRIC TEAL -->
+  <div class="card teal">
+    <div class="card-hero">
+      <div class="mock-phone">
+        <div class="phone-top">
+          <div class="phone-dot"></div>
+          <div class="phone-text-lg"></div>
+          <div class="phone-text-sm"></div>
+        </div>
+        <div class="phone-bottom">
+          <div class="phone-list-item"></div>
+          <div class="phone-list-item"></div>
+          <div class="phone-btn" style="background:#00C9A7">RIDE</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-header">
+        <span class="card-name">Electric Teal</span>
+        <span class="card-tag tag-recommended">Aanbevolen</span>
+      </div>
+      <p class="card-desc">Fris, premium en uniek. Werkt perfect op donkere achtergronden. Denk Revolut, Wise.</p>
+      <div class="swatches">
+        <div class="swatch" style="background:#00C9A7">#00C9A7</div>
+        <div class="swatch" style="background:#009E85">#009E85</div>
+        <div class="swatch light-text" style="background:#00251F">#00251F</div>
+        <div class="swatch" style="background:#D0F5F0; color:rgba(0,0,0,0.5)">#D0F5F0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADVENTURE ORANGE -->
+  <div class="card orange">
+    <div class="card-hero">
+      <div class="mock-phone">
+        <div class="phone-top">
+          <div class="phone-dot"></div>
+          <div class="phone-text-lg"></div>
+          <div class="phone-text-sm"></div>
+        </div>
+        <div class="phone-bottom">
+          <div class="phone-list-item"></div>
+          <div class="phone-list-item"></div>
+          <div class="phone-btn" style="background:#FF6B35">RIDE</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-header">
+        <span class="card-name">Adventure Orange</span>
+        <span class="card-tag tag-current" style="color:#FF6B35; background:rgba(255,107,53,0.12)">Uniek</span>
+      </div>
+      <p class="card-desc">Niemand in ride-sharing gebruikt oranje. Warm, energiek en past perfect bij "avontuur".</p>
+      <div class="swatches">
+        <div class="swatch light-text" style="background:#FF6B35">#FF6B35</div>
+        <div class="swatch light-text" style="background:#E5521C">#E5521C</div>
+        <div class="swatch light-text" style="background:#1F0E08">#1F0E08</div>
+        <div class="swatch" style="background:#FFE8DF; color:rgba(0,0,0,0.5)">#FFE8DF</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEEP INDIGO -->
+  <div class="card indigo">
+    <div class="card-hero">
+      <div class="mock-phone">
+        <div class="phone-top">
+          <div class="phone-dot"></div>
+          <div class="phone-text-lg"></div>
+          <div class="phone-text-sm"></div>
+        </div>
+        <div class="phone-bottom">
+          <div class="phone-list-item"></div>
+          <div class="phone-list-item"></div>
+          <div class="phone-btn" style="background:#6C63FF">RIDE</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-header">
+        <span class="card-name">Deep Indigo</span>
+        <span class="card-tag tag-current" style="color:#6C63FF; background:rgba(108,99,255,0.12)">Premium</span>
+      </div>
+      <p class="card-desc">Strak en premium. Onderscheidend in de markt. Rider én Driver app zien er luxe uit.</p>
+      <div class="swatches">
+        <div class="swatch light-text" style="background:#6C63FF">#6C63FF</div>
+        <div class="swatch light-text" style="background:#4B44D4">#4B44D4</div>
+        <div class="swatch light-text" style="background:#0D0B1F">#0D0B1F</div>
+        <div class="swatch" style="background:#ECEAFF; color:rgba(0,0,0,0.5)">#ECEAFF</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUNRISE AMBER -->
+  <div class="card amber">
+    <div class="card-hero">
+      <div class="mock-phone">
+        <div class="phone-top">
+          <div class="phone-dot"></div>
+          <div class="phone-text-lg"></div>
+          <div class="phone-text-sm"></div>
+        </div>
+        <div class="phone-bottom">
+          <div class="phone-list-item"></div>
+          <div class="phone-list-item"></div>
+          <div class="phone-btn" style="background:#F59E0B">RIDE</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-header">
+        <span class="card-name">Sunrise Amber</span>
+        <span class="card-tag tag-current" style="color:#F59E0B; background:rgba(245,158,11,0.12)">Warm</span>
+      </div>
+      <p class="card-desc">Warm en uitnodigend — de kleur van zonsopgang op de weg. Hoog contrast, goed leesbaar.</p>
+      <div class="swatches">
+        <div class="swatch" style="background:#F59E0B; color:rgba(0,0,0,0.6)">#F59E0B</div>
+        <div class="swatch" style="background:#D97706; color:rgba(0,0,0,0.6)">#D97706</div>
+        <div class="swatch light-text" style="background:#1C1208">#1C1208</div>
+        <div class="swatch" style="background:#FEF3C7; color:rgba(0,0,0,0.5)">#FEF3C7</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>True Road Adventures B.V. · Nederland · Klik op een optie om te kiezen</footer>
+
+</body>
+</html>

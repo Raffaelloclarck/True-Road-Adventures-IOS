@@ -1,0 +1,670 @@
+/* ===== WELCOME / AUTH FLOW ===== */
+"welcome.cta.phone" = "Via telefoonnummer";
+"welcome.cta.google" = "Inloggen met Google";
+"welcome.cta.apple" = "Inloggen met Apple";
+"welcome.cta.email" = "Inloggen met e-mail";
+"welcome.no_account" = "Nog geen account?";
+"welcome.register" = "Registreer je";
+"welcome.legal.pre" = "Door verder te gaan ga je akkoord met onze";
+"welcome.legal.and" = "en";
+"welcome.terms" = "Servicevoorwaarden";
+"welcome.privacy" = "Privacybeleid";
+"welcome.or" = "OF";
+"register.legal.pre" = "Door te registreren ga je akkoord met onze";
+"register.legal.and" = "en";
+
+/* ===== LOGIN ===== */
+"login.title" = "Welkom terug";
+"login.email.placeholder" = "E-mailadres";
+"login.password.placeholder" = "Wachtwoord";
+"login.forgot_password" = "Wachtwoord vergeten?";
+"login.cta" = "Inloggen";
+"login.google" = "Inloggen met Google";
+"login.apple" = "Inloggen met Apple";
+"login.reset.alert.title" = "Wachtwoord vergeten";
+"login.reset.alert.body" = "Voer je e-mailadres in. Je ontvangt een link om je wachtwoord opnieuw in te stellen.";
+"login.reset.email.placeholder" = "E-mailadres";
+"login.reset.cancel" = "Annuleren";
+"login.reset.send" = "Versturen";
+"login.reset.success.title" = "E-mail verstuurd";
+"login.reset.success.body" = "Controleer je inbox voor de resetlink.";
+"login.ok" = "OK";
+
+/* ===== REGISTER ===== */
+"register.title" = "Account aanmaken";
+"register.name.placeholder" = "Volledige naam";
+"register.email.placeholder" = "E-mailadres";
+"register.password.placeholder" = "Wachtwoord (min. 6 tekens)";
+"register.referral.placeholder" = "Referral code (optioneel)";
+"register.cta" = "Account aanmaken";
+"register.terms" = "Servicevoorwaarden";
+"register.privacy" = "Privacybeleid";
+
+/* ===== PHONE AUTH ===== */
+"phone.title.step1" = "Voer je telefoonnummer in";
+"phone.title.step2" = "Code invoeren";
+"phone.step1.label" = "Stap 1 van 2";
+"phone.step2.label" = "Stap 2 van 2";
+"phone.step1.placeholder" = "612345678";
+"phone.step1.subtitle" = "Je ontvangt een sms-code om je nummer te verifiëren.";
+"phone.step1.cta" = "Code sturen";
+"phone.step2.field.title" = "Verificatiecode";
+"phone.step2.placeholder" = "123456";
+"phone.step2.subtitle" = "Voer de 6-cijferige code in die we stuurden naar %@";
+"phone.step2.cta" = "Verifiëren";
+"phone.step2.resend" = "Code opnieuw sturen";
+"phone.country.nl" = "Nederland";
+"phone.country.be" = "België";
+"phone.country.de" = "Duitsland";
+"phone.country.fr" = "Frankri­jk";
+"phone.country.gb" = "Verenigd Koninkrijk";
+"phone.country.us" = "Verenigde Staten";
+"phone.country.es" = "Spanje";
+"phone.country.it" = "Italië";
+"phone.country.pl" = "Polen";
+"phone.country.tr" = "Turkije";
+"phone.country.ma" = "Marokko";
+"phone.country.ng" = "Nigeria";
+
+/* ===== SPLASH ===== */
+"splash.tagline.rider" = "Jouw rit, jouw avontuur";
+"splash.tagline.driver" = "Rij. Verdien. Geniet.";
+"splash.made_in" = "Made in the Netherlands 🇳🇱";
+
+/* ===== PERMISSIONS ONBOARDING ===== */
+"permissions.title" = "True Road Adventures";
+"permissions.subtitle" = "Bijna klaar om te rijden";
+"permissions.skip" = "Overslaan";
+"permissions.location.title" = "Locatietoegang";
+"permissions.location.body" = "We gebruiken je locatie om ritten aan te vragen en de dichtstbijzijnde chauffeur te vinden.";
+"permissions.location.cta" = "Locatie toestaan";
+"permissions.notifications.title" = "Meldingen";
+"permissions.notifications.body" = "Ontvang realtime updates over je rit, zoals wanneer je chauffeur onderweg is.";
+"permissions.notifications.cta" = "Meldingen toestaan";
+
+/* ===== RIDER TABS ===== */
+"tab.home" = "Home";
+"tab.rides" = "Ritten";
+"tab.profile" = "Profiel";
+
+/* ===== RIDER HOME ===== */
+"rider.home.search.placeholder" = "Waarheen?";
+"rider.home.plan_ride" = "Plan een rit";
+"rider.home.saved.home" = "Thuis";
+"rider.home.saved.home.empty" = "Voeg je thuisadres toe";
+"rider.home.saved.work" = "Werk";
+"rider.home.saved.work.empty" = "Voeg je werkadres toe";
+"rider.home.service.standard" = "Standaard";
+"rider.home.service.comfort" = "Comfort";
+"rider.home.service.xl" = "XL";
+"rider.home.service.green" = "Groen";
+"rider.home.active_ride" = "Actieve rit";
+"rider.home.destination" = "Bestemming";
+"rider.home.eta" = "ETA: %@ min";
+"rider.home.cancel" = "Annuleer";
+"rider.home.chat" = "Chat";
+
+/* ===== RIDER RIDE REQUEST ===== */
+"ride_request.title" = "Rit aanvragen";
+"ride_request.pickup" = "Ophaallocatie";
+"ride_request.destination" = "Bestemming";
+"ride_request.estimate.loading" = "Tariefschatting berekenen…";
+"ride_request.estimate.enter_destination" = "Voer een bestemming in voor een schatting";
+"ride_request.estimate.unavailable" = "Schatting niet beschikbaar";
+"ride_request.estimate.label" = "Schatting: SRD %.0f";
+"ride_request.estimate.wait_surcharge" = "+ SRD 3.33/min bij wachten";
+"ride_request.schedule" = "Rit inplannen";
+"ride_request.schedule.datetime" = "Datum & tijd";
+"ride_request.current_location" = "Huidige locatie";
+"ride_request.no_internet" = "Geen internetverbinding. Probeer opnieuw.";
+"ride_request.cta" = "Rit aanvragen";
+"ride_request.error" = "Fout";
+"ride_request.ok" = "OK";
+
+/* ===== ACTIVE RIDE (RIDER) ===== */
+"active_ride.driver_preparing" = "Chauffeur bereidt navigatie voor…";
+"active_ride.total" = "Totaal te betalen";
+"active_ride.eta.unit" = "min";
+"active_ride.driver.fallback" = "Chauffeur";
+"active_ride.dash" = "–";
+"active_ride.action.chat" = "Chat";
+"active_ride.action.call" = "Bellen";
+"active_ride.action.share" = "Deel";
+"active_ride.action.cancel" = "Annuleer";
+"active_ride.share.text" = "Ik maak een rit van %@ naar %@ via True Road Adventures.";
+"active_ride.share.pickup_fallback" = "Ophaallocatie";
+"active_ride.share.destination_fallback" = "Bestemming";
+
+/* ===== RIDE COMPLETION ===== */
+"completion.title" = "Rit voltooid!";
+"completion.fare" = "Eindtarief";
+"completion.distance" = "Afstand";
+"completion.duration" = "Rijtijd";
+"completion.driver" = "Jouw chauffeur";
+"completion.driver.fallback" = "Chauffeur";
+"completion.rating.title" = "Hoe was je rit?";
+"completion.rating.note.placeholder" = "Opmerking (optioneel)";
+"completion.rating.submit" = "Beoordeling indienen";
+"completion.skip" = "Overslaan";
+"completion.tag.friendly" = "Vriendelijk";
+"completion.tag.punctual" = "Stipt op tijd";
+"completion.tag.clean_car" = "Schone auto";
+"completion.tag.good_driver" = "Goede chauffeur";
+"completion.score.1" = "Erg slecht";
+"completion.score.2" = "Slecht";
+"completion.score.3" = "Matig";
+"completion.score.4" = "Goed";
+"completion.score.5" = "Uitstekend";
+
+/* ===== RIDE DETAIL (RIDER) ===== */
+"ride_detail.title" = "Ritdetails";
+"ride_detail.pickup" = "Ophalen";
+"ride_detail.pickup.unknown" = "Ophaallocatie onbekend";
+"ride_detail.destination" = "Bestemming";
+"ride_detail.destination.unknown" = "Bestemming onbekend";
+"ride_detail.scheduled" = "Gepland: %@";
+"ride_detail.distance" = "Afstand";
+"ride_detail.fare.final" = "Eindtarief";
+"ride_detail.fare.estimated" = "Geschat tarief";
+"ride_detail.payment" = "Betaling";
+"ride_detail.cancel.cta" = "Rit annuleren";
+"ride_detail.cancel.title" = "Rit annuleren?";
+"ride_detail.cancel.confirm" = "Weet je zeker dat je deze rit wilt annuleren?";
+"ride_detail.cancel.button" = "Annuleren";
+"ride_detail.back" = "Terug";
+"ride_detail.rating.title" = "Beoordeel rit";
+"ride_detail.rating.question" = "Hoe was je rit?";
+"ride_detail.rating.note.placeholder" = "Opmerking (optioneel)";
+"ride_detail.rating.submit" = "Verstuur beoordeling";
+"ride_detail.rating.cancel" = "Annuleer";
+"ride_detail.rating.nav" = "Beoordeling";
+"ride_detail.rating.sent" = "Beoordeling verstuurd";
+"ride_detail.payment.pending" = "Openstaand";
+"ride_detail.payment.paid" = "Betaald";
+"ride_detail.payment.failed" = "Mislukt";
+"ride_detail.payment.cash" = "Contant";
+
+/* ===== RIDE HISTORY ===== */
+"ride_history.title" = "Mijn ritten";
+"ride_history.empty.title" = "Geen ritten";
+"ride_history.empty.body" = "Je hebt nog geen ritten gemaakt";
+"ride_history.empty.cta" = "Plan een rit";
+"ride_history.destination.unknown" = "Bestemming onbekend";
+"ride_history.filter.all" = "Alles";
+"ride_history.filter.scheduled" = "Gepland";
+"ride_history.filter.completed" = "Voltooid";
+
+/* ===== RIDER DRAWER ===== */
+"drawer.user.fallback" = "Gebruiker";
+"drawer.update.title" = "Update beschikbaar";
+"drawer.update.body" = "Versie 2.0 is nu beschikbaar";
+"drawer.menu.home" = "Home";
+"drawer.menu.rides" = "Mijn ritten";
+"drawer.menu.favorites" = "Favorieten";
+"drawer.menu.payment" = "Betaling";
+"drawer.menu.promotions" = "Promoties";
+"drawer.menu.safety" = "Veiligheid";
+"drawer.menu.profile" = "Profiel";
+"drawer.menu.support" = "Hulp & Support";
+"drawer.menu.about" = "Over de app";
+"drawer.menu.logout" = "Uitloggen";
+"drawer.new.badge" = "NIEUW";
+"drawer.become_driver" = "Word chauffeur";
+"drawer.become_driver.subtitle" = "Verdien geld als True Road chauffeur";
+
+/* ===== RIDER PROFILE ===== */
+"rider.profile.referral.title" = "Verdien gratis ritten";
+"rider.profile.referral.subtitle" = "Nodig vrienden uit en ontvang kortingen";
+"rider.profile.section.account" = "Account";
+"rider.profile.section.more" = "Meer";
+"rider.profile.row.personal" = "Persoonlijke gegevens";
+"rider.profile.row.payment" = "Betaalinformatie";
+"rider.profile.row.saved_places" = "Opgeslagen plaatsen";
+"rider.profile.row.preferences" = "Voorkeuren";
+"rider.profile.row.promotions" = "Promoties";
+"rider.profile.row.safety" = "Veiligheid";
+"rider.profile.row.support" = "Hulp & Support";
+"rider.profile.row.about" = "Over de app";
+"rider.profile.delete.row" = "Account verwijderen";
+"rider.profile.delete.title" = "Account verwijderen";
+"rider.profile.delete.body" = "Weet je zeker dat je je account wilt verwijderen? Dit kan niet ongedaan worden gemaakt.";
+"rider.profile.delete.cancel" = "Annuleer";
+"rider.profile.delete.confirm" = "Verwijder";
+"rider.profile.user.fallback" = "Gebruiker";
+
+/* ===== RIDER PERSONAL INFO ===== */
+"personal_info.title" = "Persoonlijke gegevens";
+"personal_info.name.placeholder" = "Volledige naam";
+"personal_info.email.placeholder" = "E-mailadres";
+"personal_info.phone.placeholder" = "Telefoonnummer";
+"personal_info.save" = "Opslaan";
+"personal_info.change_photo" = "Foto wijzigen";
+
+/* ===== RIDER PREFERENCES ===== */
+"preferences.title" = "Voorkeuren";
+"preferences.section.notifications" = "Meldingen";
+"preferences.notifications.rides.title" = "Rit-meldingen";
+"preferences.notifications.rides.subtitle" = "Ontvang updates over je rit";
+"preferences.notifications.promo.title" = "Promoties";
+"preferences.notifications.promo.subtitle" = "Ontvang aanbiedingen en kortingen";
+"preferences.section.app" = "App-instellingen";
+"preferences.language" = "Taal";
+"preferences.currency" = "Valuta";
+"preferences.saving" = "Opslaan...";
+"preferences.language.picker.title" = "Taal kiezen";
+"preferences.language.cancel" = "Annuleer";
+"preferences.lang.nl" = "Nederlands";
+"preferences.lang.en" = "English";
+"preferences.lang.de" = "Deutsch";
+"preferences.lang.fr" = "Français";
+
+/* ===== RIDER PAYMENT INFO ===== */
+"payment.title" = "Betaalinformatie";
+"payment.section.methods" = "Betaalmethoden";
+"payment.default" = "Standaard";
+"payment.section.history" = "Betaalgeschiedenis";
+"payment.history.all" = "Bekijk alle transacties";
+"payment.add" = "Betaalmethode toevoegen";
+"payment.error" = "Fout";
+"payment.ok" = "OK";
+
+/* ===== RIDER SAVED PLACES ===== */
+"saved_places.title" = "Opgeslagen plaatsen";
+"saved_places.home" = "Thuis";
+"saved_places.home.placeholder" = "Thuisadres";
+"saved_places.home.add" = "Voeg je thuisadres toe";
+"saved_places.home.field" = "Voeg thuisadres toe";
+"saved_places.work" = "Werk";
+"saved_places.work.placeholder" = "Werkadres";
+"saved_places.work.add" = "Voeg je werkadres toe";
+"saved_places.work.field" = "Voeg werkadres toe";
+"saved_places.add_location" = "Locatie toevoegen";
+"saved_places.save" = "Opslaan";
+"saved_places.delete" = "Verwijderen";
+"saved_places.cancel" = "Annuleer";
+
+/* ===== RIDER PROMOTIONS ===== */
+"promotions.title" = "Promoties";
+"promotions.code.placeholder" = "Code invoeren";
+"promotions.code.cta" = "Toepassen";
+"promotions.active.title" = "Actieve promoties";
+"promotions.success.title" = "Gelukt!";
+"promotions.invalid.title" = "Niet geldig";
+"promotions.ok" = "OK";
+"promotions.success.body" = "Code '%@' is toegepast! Korting wordt verrekend bij je volgende rit.";
+"promotions.invalid.body" = "De code '%@' is niet geldig of al gebruikt.";
+
+/* ===== RIDER SAFETY INFO ===== */
+"safety.title" = "Veiligheid";
+"safety.emergency.title" = "Noodknop";
+"safety.emergency.body" = "Neem in geval van nood direct contact op met hulpdiensten. Druk op de noodknop in de rit-weergave.";
+"safety.location.title" = "Locatie delen";
+"safety.location.body" = "Deel je rit-locatie met familie en vrienden voor extra veiligheid.";
+"safety.rating.title" = "Beoordeel je chauffeur";
+"safety.rating.body" = "Help ons de kwaliteit te verbeteren door na elke rit een beoordeling te geven.";
+"safety.support.title" = "24/7 support";
+"safety.support.body" = "Ons ondersteuningsteam is dag en nacht bereikbaar voor vragen en noodgevallen.";
+"safety.emergency.alert.title" = "112 Bellen?";
+"safety.emergency.alert.body" = "Je staat op het punt de nooddiensten te bellen. Weet je zeker dat je door wilt gaan?";
+"safety.emergency.alert.call" = "Bel 112";
+"safety.emergency.alert.cancel" = "Annuleer";
+"safety.emergency.cta" = "Noodknop – Bel 112";
+"safety.support.chat" = "Chat met support";
+"safety.support.call" = "Bel support";
+
+/* ===== CHAT ===== */
+"chat.title" = "Chat";
+"chat.ride_prefix" = "Rit #%@";
+"chat.message.placeholder" = "Bericht...";
+
+/* ===== SUPPORT ===== */
+"support.title" = "Hulp & Support";
+"support.search.placeholder" = "Zoek hulp...";
+"support.more.title" = "Nog vragen?";
+"support.contact.chat" = "Chat met support";
+"support.contact.call" = "Bel ons";
+"support.contact.cta" = "Contact opnemen";
+"support.close" = "Sluiten";
+"support.topic.payment" = "Betaling & Terugbetaling";
+"support.topic.promotions" = "Promoties & Kortingen";
+"support.topic.safety" = "Veiligheid";
+"support.topic.privacy" = "Privacy & Gegevens";
+"support.topic.saved_places" = "Opgeslagen plaatsen";
+"support.topic.language" = "Taal & Regio";
+"support.topic.account" = "Account beheer";
+"support.topic.ride_issues" = "Problemen met ritten";
+"support.body.payment" = "Betalingen worden veilig verwerkt. Neem contact op als je een onverwachte afschrijving ziet of een terugbetaling wilt aanvragen.";
+"support.body.promotions" = "Promotiecode? Voer die in bij Profiel → Promoties. Codes zijn eenmalig geldig en niet overdraagbaar.";
+"support.body.safety" = "Voel je je onveilig? Gebruik de noodknop in de rit-weergave om direct 112 te bellen. Je kunt je rit ook delen met vertrouwde contacten.";
+"support.body.privacy" = "We bewaren alleen de gegevens die nodig zijn voor de dienst. Lees ons privacybeleid voor meer informatie.";
+"support.body.saved_places" = "Sla je thuis- en werkadres op via Profiel → Opgeslagen plaatsen voor sneller boeken.";
+"support.body.language" = "Wijzig de taal van de app via Profiel → Voorkeuren → Taal.";
+"support.body.account" = "Verwijder je account via Profiel → Account verwijderen. Dit verwijdert alle gegevens permanent.";
+"support.body.ride_issues" = "Problemen met een rit? Neem contact op via de chat of bel onze support. Vermeld het ritnummer voor snellere afhandeling.";
+
+/* ===== ABOUT ===== */
+"about.title" = "Over de app";
+"about.app_name" = "True Road Adventures";
+"about.version" = "Versie 1.0.1 (2)";
+"about.developer.title" = "Ontwikkelaar";
+"about.developer.name" = "True Road Adventures B.V.";
+"about.country.title" = "Land";
+"about.country.name" = "Nederland 🇳🇱";
+"about.license.title" = "Licentie";
+"about.license.body" = "© 2025 True Road Adventures";
+"about.terms" = "Servicevoorwaarden";
+"about.privacy" = "Privacybeleid";
+"about.website" = "Website bezoeken";
+
+/* ===== DRIVER HOME ===== */
+"driver.home.active_ride" = "Actieve rit";
+"driver.home.available_rides" = "Beschikbare ritten";
+"driver.home.no_rides" = "Geen ritten beschikbaar";
+"driver.home.no_rides.subtitle" = "Wacht op nieuwe ritverzoeken van klanten";
+"driver.home.no_internet" = "Geen internetverbinding";
+"driver.home.destination" = "Bestemming";
+"driver.home.pickup" = "Ophaallocatie";
+"driver.home.open_nav" = "Navigatie openen";
+"driver.home.accept" = "Accepteren";
+"driver.home.status.ready" = "Driver gereed";
+"driver.home.status.online" = "Driver online";
+"driver.home.status.offline" = "Driver offline";
+"driver.home.status.accepted" = "Rit geaccepteerd";
+"driver.home.status.offline_failed" = "Offline: accepteren mislukt";
+"driver.home.status.failed" = "Mislukt: %@";
+"driver.home.status.update_failed" = "Status update mislukt";
+"driver.home.online" = "Online";
+"driver.home.offline" = "Offline";
+"driver.home.you_are_offline" = "Jij bent offline";
+"driver.home.offline.subtitle" = "Zet jezelf online om ritverzoeken te ontvangen";
+"driver.home.driver.fallback" = "Chauffeur";
+
+/* ===== INCOMING RIDE (DRIVER) ===== */
+"incoming_ride.title" = "Nieuwe rit!";
+"incoming_ride.countdown" = "Reageer binnen %d seconden";
+"incoming_ride.pickup" = "Ophaallocatie";
+"incoming_ride.destination" = "Bestemming";
+"incoming_ride.scheduled" = "Gepland voor";
+"incoming_ride.fare" = "Geschat tarief";
+"incoming_ride.decline" = "Weigeren";
+"incoming_ride.accept" = "Accepteren";
+"incoming_ride.accept_failed.title" = "Accepteren mislukt";
+"incoming_ride.ok" = "OK";
+"incoming_ride.no_internet" = "Geen internetverbinding. Controleer je verbinding en probeer opnieuw.";
+
+/* ===== DRIVER ACTIVE RIDE ===== */
+"driver_active.calculating" = "Route wordt berekend…";
+"driver_active.recalculating" = "Herberekenen…";
+"driver_active.speed.unit" = "km/u";
+"driver_active.pickup" = "Ophaallocatie";
+"driver_active.destination" = "Bestemming";
+"driver_active.chat" = "Chat";
+"driver_active.wait.surcharge" = " · SRD 3.33/min wachten";
+"driver_active.wait.stop" = "Stop wacht";
+"driver_active.wait.start" = "Wacht";
+"driver_active.arrived" = "Ik ben bij de klant";
+"driver_active.picked_up" = "Passagier opgehaald";
+"driver_active.complete" = "Rit voltooien";
+"driver_active.open_nav" = "Navigatie openen";
+
+/* ===== DRIVER RIDE DETAIL ===== */
+"driver_ride_detail.title" = "Ritdetails";
+"driver_ride_detail.pickup" = "Ophalen";
+"driver_ride_detail.unknown" = "Onbekend";
+"driver_ride_detail.destination" = "Bestemming";
+"driver_ride_detail.scheduled" = "Gepland voor";
+"driver_ride_detail.passenger" = "Passagier";
+"driver_ride_detail.fare" = "Geschat tarief";
+"driver_ride_detail.accept" = "Rit accepteren";
+"driver_ride_detail.decline" = "Weigeren";
+
+/* ===== DRIVER PROFILE ===== */
+"driver.profile.driver.fallback" = "Chauffeur";
+"driver.profile.stat.rides" = "Ritten";
+"driver.profile.stat.rating" = "Beoordeling";
+"driver.profile.stat.acceptance" = "Acceptatie";
+"driver.profile.section.account" = "Account";
+"driver.profile.section.activity" = "Activiteit";
+"driver.profile.section.more" = "Meer";
+"driver.profile.row.personal" = "Persoonlijke gegevens";
+"driver.profile.row.vehicle" = "Voertuiggegevens";
+"driver.profile.row.documents" = "Documenten";
+"driver.profile.row.reviews" = "Beoordelingen";
+"driver.profile.row.earnings" = "Verdiensten";
+"driver.profile.row.support" = "Hulp & Support";
+"driver.profile.row.about" = "Over de app";
+"driver.profile.logout" = "Uitloggen";
+"driver.profile.delete" = "Account verwijderen";
+"driver.profile.delete.title" = "Account verwijderen";
+"driver.profile.delete.body" = "Weet je zeker dat je je account wilt verwijderen? Dit kan niet ongedaan worden gemaakt.";
+"driver.profile.delete.cancel" = "Annuleer";
+"driver.profile.delete.confirm" = "Verwijder";
+
+/* ===== DRIVER PERSONAL INFO ===== */
+"driver.personal.title" = "Persoonlijke gegevens";
+"driver.personal.name.placeholder" = "Volledige naam";
+"driver.personal.email.placeholder" = "E-mailadres";
+"driver.personal.phone.placeholder" = "Telefoonnummer";
+"driver.personal.save" = "Opslaan";
+"driver.personal.change_photo" = "Foto wijzigen";
+"driver.personal.password.cta" = "Wachtwoord wijzigen";
+"driver.personal.password.current" = "Huidig wachtwoord";
+"driver.personal.password.new" = "Nieuw wachtwoord";
+"driver.personal.password.confirm" = "Bevestig wachtwoord";
+"driver.personal.password.success" = "Wachtwoord succesvol gewijzigd";
+"driver.personal.password.title" = "Wachtwoord wijzigen";
+
+/* ===== DRIVER VEHICLE ===== */
+"driver.vehicle.title" = "Voertuiggegevens";
+"driver.vehicle.brand.placeholder" = "Merk (bijv. Toyota)";
+"driver.vehicle.model.placeholder" = "Model (bijv. Prius)";
+"driver.vehicle.year.placeholder" = "Bouwjaar";
+"driver.vehicle.plate.placeholder" = "Kenteken";
+"driver.vehicle.save" = "Opslaan";
+
+/* ===== DRIVER DOCUMENTS ===== */
+"driver.documents.title" = "Documenten";
+"driver.documents.license" = "Rijbewijs";
+"driver.documents.registration" = "Kentekenbewijs";
+"driver.documents.insurance" = "Verzekeringsbewijs";
+"driver.documents.verified" = "Geverifieerd";
+"driver.documents.upload_required" = "Upload vereist";
+"driver.documents.uploading" = "Uploaden...";
+"driver.documents.upload_failed" = "Upload mislukt: %@";
+
+/* ===== DRIVER REVIEWS ===== */
+"driver.reviews.title" = "Beoordelingen";
+"driver.reviews.count" = "%d beoordelingen";
+"driver.reviews.empty.title" = "Nog geen beoordelingen";
+"driver.reviews.empty.body" = "Beoordelingen verschijnen hier nadat passagiers je rit hebben beoordeeld";
+
+/* ===== DRIVER INCOMING RIDE ===== */
+"driver.incoming.new_ride" = "Nieuwe rit!";
+"driver.incoming.respond_seconds" = "Reageer binnen %d seconden";
+"driver.incoming.pickup" = "Ophalen";
+"driver.incoming.pickup_fallback" = "Ophaallocatie";
+"driver.incoming.destination" = "Bestemming";
+"driver.incoming.destination_fallback" = "Bestemming";
+"driver.incoming.scheduled_for" = "Gepland voor";
+"driver.incoming.estimated_fare" = "Geschat tarief";
+"driver.incoming.decline" = "Weigeren";
+"driver.incoming.accept" = "Accepteren";
+"driver.incoming.error_title" = "Accepteren mislukt";
+"driver.incoming.error_offline" = "Geen internetverbinding. Controleer je verbinding en probeer opnieuw.";
+
+/* ===== DRIVER EARNINGS ===== */
+"driver.earnings.title" = "Verdiensten";
+"driver.earnings.this_month" = "Deze maand";
+"driver.earnings.rides_completed" = "%d ritten voltooid";
+"driver.earnings.section.overview" = "Overzicht";
+"driver.earnings.period.this_week" = "Deze week";
+"driver.earnings.period.last_week" = "Vorige week";
+"driver.earnings.period.last_month" = "Vorige maand";
+
+/* ===== AUTH ERRORS ===== */
+"auth.error.not_found" = "Account niet gevonden";
+"auth.error.wrong_password" = "Onjuist wachtwoord";
+"auth.error.already_exists" = "Bestaat al";
+"auth.error.unknown_email" = "Onbekend e-mailadres";
+"auth.error.not_authenticated" = "Niet ingelogd";
+"auth.error.current_password_wrong" = "Huidig wachtwoord onjuist";
+"auth.error.no_refresh_token" = "Geen refresh token beschikbaar";
+"auth.error.missing_token" = "Authenticatietoken ontbreekt";
+"auth.error.google_token_missing" = "Google-token ontbreekt";
+"auth.error.apple_credential_missing" = "Apple-credential ontbreekt";
+
+/* ===== CURRENCY FORMAT ===== */
+"format.currency" = "SRD %.2f";
+"format.currency.rounded" = "SRD %.0f";
+"format.distance" = "%.1f km";
+"format.eta" = "Aankomst ~%@";
+
+/* ===== COMMON ===== */
+"common.unknown" = "Onbekend";
+"common.offline_banner" = "Geen internetverbinding";
+"action.call" = "Bellen";
+"action.share" = "Deel";
+"action.cancel_short" = "Annuleer";
+"action.chat" = "Chat";
+
+/* ===== ROUTE LABELS ===== */
+"route.pickup" = "Ophalen";
+"route.destination" = "Bestemming";
+"route.distance" = "Afstand";
+"route.scheduled_for" = "Gepland voor";
+"route.pickup_unknown" = "Ophaallocatie onbekend";
+"route.destination_unknown" = "Bestemming onbekend";
+"route.pickup_fallback" = "Ophaallocatie";
+"route.destination_fallback" = "Bestemming";
+
+/* ===== FARE / PAYMENT ===== */
+"fare.estimated_label" = "Geschat tarief";
+"fare.final_label" = "Eindtarief";
+"payment.title" = "Betaling";
+"payment.pending" = "Openstaand";
+"payment.paid" = "Betaald";
+"payment.failed" = "Mislukt";
+"payment.cash" = "Contant";
+
+/* ===== RIDE DETAIL ===== */
+"ride.detail.title" = "Ritdetails";
+"ride.detail.accept" = "Rit accepteren";
+"ride.detail.passenger" = "Passagier";
+"ride.detail.scheduled" = "Gepland: %@";
+"ride.cancel.button" = "Rit annuleren";
+"ride.cancel.title" = "Rit annuleren?";
+"ride.cancel.message" = "Weet je zeker dat je deze rit wilt annuleren?";
+"ride.cancel.confirm" = "Annuleren";
+"ride.cancel.back" = "Terug";
+"ride.rate.button" = "Beoordeel rit";
+"ride.rate.submitted" = "Beoordeling verstuurd";
+"ride.rate.how_was_ride" = "Hoe was je rit?";
+"ride.rate.placeholder" = "Opmerking (optioneel)";
+"ride.rate.submit" = "Verstuur beoordeling";
+"ride.rate.title" = "Beoordeling";
+
+/* ===== SCORE LABELS ===== */
+"score.1" = "Erg slecht";
+"score.2" = "Slecht";
+"score.3" = "Matig";
+"score.4" = "Goed";
+"score.5" = "Uitstekend";
+
+/* ===== ACTIVE RIDE (DRIVER) ===== */
+"active.ride.calculating_route" = "Route wordt berekend…";
+"active.ride.rerouting" = "Herberekenen…";
+"active.ride.speed_unit" = "km/u";
+"active.ride.waiting" = "Wacht: %@";
+"active.ride.wait_rate" = "SRD 3.33/min wachten";
+"active.ride.stop_wait" = "Stop wacht";
+"active.ride.start_wait" = "Wacht";
+"active.ride.arrived_customer" = "Ik ben bij de klant";
+"active.ride.passenger_picked_up" = "Passagier opgehaald";
+"active.ride.complete_ride" = "Rit voltooien";
+"active.ride.eta" = "Aankomst ~%1$@ · %2$d min";
+
+/* ===== ACTIVE RIDE (RIDER) ===== */
+"active.ride.driver_preparing" = "Chauffeur bereidt navigatie voor…";
+"active.ride.total_to_pay" = "Totaal te betalen";
+"active.ride.driver_fallback" = "Chauffeur";
+"active.ride.share_text" = "Ik maak een rit van %1$@ naar %2$@ via True Road Adventures.";
+
+/* ===== RIDE REQUEST ===== */
+"ride.request.title" = "Rit aanvragen";
+"ride.request.button" = "Rit aanvragen";
+"ride.request.fare_estimate" = "Schatting: SRD %.0f";
+"ride.request.wait_rate" = "+ SRD 3.33/min bij wachten";
+"ride.request.calculating_fare" = "Tariefschatting berekenen…";
+"ride.request.enter_destination" = "Voer een bestemming in voor een schatting";
+"ride.request.estimate_unavailable" = "Schatting niet beschikbaar";
+"ride.request.schedule_toggle" = "Rit inplannen";
+"ride.request.date_time" = "Datum & tijd";
+"ride.request.offline_error" = "Geen internetverbinding. Probeer opnieuw.";
+"ride.request.current_location" = "Huidige locatie";
+"ride.request.error_title" = "Fout";
+
+/* ===== RIDE COMPLETION ===== */
+"completion.ride_completed" = "Rit voltooid!";
+"completion.ride_time" = "Rijtijd";
+"completion.your_driver" = "Jouw chauffeur";
+"completion.feedback.friendly" = "Vriendelijk";
+"completion.feedback.punctual" = "Stipt op tijd";
+"completion.feedback.clean_car" = "Schone auto";
+"completion.feedback.good_driver" = "Goede chauffeur";
+"completion.submit_rating" = "Beoordeling indienen";
+"completion.skip" = "Overslaan";
+"completion.thank_you_name" = "Bedankt, %@!";
+"completion.review_encouragement" = "Een beoordeling zou erg gewaardeerd worden";
+
+/* ===== RIDER HOME ===== */
+"home.where_to" = "Waarheen?";
+"home.schedule_ride" = "Plan een rit";
+"home.home_label" = "Thuis";
+"home.home_add" = "Voeg je thuisadres toe";
+"home.work_label" = "Werk";
+"home.work_add" = "Voeg je werkadres toe";
+"home.active_ride" = "Actieve rit";
+"home.eta" = "ETA: %d min";
+"home.service.standard" = "Standaard";
+"home.service.comfort" = "Comfort";
+"home.service.xl" = "XL";
+"home.service.green" = "Groen";
+
+/* ===== DRIVER HOME ===== */
+"driver.home.online" = "Online";
+"driver.home.offline" = "Offline";
+"driver.home.available_rides" = "Beschikbare ritten";
+"driver.home.no_rides_title" = "Geen ritten beschikbaar";
+"driver.home.no_rides_body" = "Wacht op nieuwe ritverzoeken van klanten";
+"driver.home.active_ride" = "Actieve rit";
+"driver.home.open_navigation" = "Navigatie openen";
+"driver.home.you_are_offline" = "Jij bent offline";
+"driver.home.go_online" = "Zet jezelf online om ritverzoeken te ontvangen";
+
+"driver.status.ready" = "Chauffeur gereed";
+"driver.status.online" = "Chauffeur online";
+"driver.status.offline" = "Chauffeur offline";
+"driver.status.accepted" = "Rit geaccepteerd";
+"driver.status.accept_failed_offline" = "Offline: accepteren mislukt";
+"driver.status.accept_failed" = "Mislukt: %@";
+"driver.status.updated" = "Status: %@";
+"driver.status.update_failed" = "Status update mislukt";
+
+/* ===== DRIVER PENDING APPROVAL ===== */
+"driver.pending.title" = "Account wordt beoordeeld";
+"driver.pending.body" = "Je aanvraag wordt bekeken door een beheerder. Je ontvangt bericht zodra je account is goedgekeurd.";
+
+/* ===== ADMIN ===== */
+"admin.tab.rides" = "Ritten";
+"admin.tab.drivers" = "Chauffeurs";
+"admin.tab.profile" = "Profiel";
+"admin.rides.title" = "Alle ritten";
+"admin.drivers.title" = "Chauffeurs";
+"admin.drivers.pending" = "Wacht op goedkeuring";
+"admin.drivers.empty" = "Geen aanvragen";
+"admin.drivers.empty.body" = "Er zijn momenteel geen openstaande chauffeursaanvragen.";
+"admin.drivers.approve" = "Goedkeuren";
+"admin.drivers.reject" = "Afwijzen";
+"admin.drivers.reject.confirm" = "Weet je zeker dat je deze chauffeur wilt afwijzen? Dit verwijdert hun account.";
+"admin.profile.title" = "Profiel";
+"active.ride.your_passenger" = "Jouw passagier";

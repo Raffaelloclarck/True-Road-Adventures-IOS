@@ -1,0 +1,11 @@
+// Shared Debug environment configuration (fallback)
+// xcconfig treats // as a comment, so URLs must be written with _S = / to produce ://
+_S = /
+API_BASE_URL = https:$(_S)$(_S)api.dev.trueroad.app
+PAYMENT_PUBLIC_KEY = pk_test_shared_xxxxxxxx
+PUSH_UPLOAD_URL = https:$(_S)$(_S)api.dev.trueroad.app/push/token
+GOOGLE_MAPS_API_KEY = AIzaSyDeGR7x4rEIlORGGHEy9oAqi6kfZNJPzaI
+GOOGLE_PLACES_API_KEY = AIzaSyDeGR7x4rEIlORGGHEy9oAqi6kfZNJPzaI
+MAP_PROVIDER = google
+CUSTOMER_BUNDLE_ID = com.trueroadadventures.customer.ios
+DRIVER_BUNDLE_ID = com.trueroadadventures.driver.ios
