@@ -26,6 +26,9 @@ struct RiderRideCompletionView: View {
             VStack(spacing: 20) {
                 completionHeader
                 fareCard
+                if ride.appliedDiscountCode != nil {
+                    discountRow
+                }
                 driverCard
                 ratingSection
                 quickFeedbackChips
@@ -136,6 +139,40 @@ struct RiderRideCompletionView: View {
             )
         }
         .padding(.vertical, 16)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.r16))
+        .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
+        .padding(.horizontal, 20)
+    }
+
+    // MARK: - Discount row
+
+    private var discountRow: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(AppColors.boltGreenLight)
+                    .frame(width: 36, height: 36)
+                Image(systemName: "tag.fill")
+                    .font(.system(size: 14))
+                    .foregroundStyle(AppColors.boltGreen)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Kortingscode toegepast")
+                    .font(AppFont.labelMedium())
+                    .foregroundStyle(AppColors.gray500)
+                Text(ride.appliedDiscountCode ?? "")
+                    .font(.system(.body, design: .monospaced).weight(.semibold))
+                    .foregroundStyle(AppColors.gray900)
+            }
+            Spacer()
+            if let amount = ride.discountAmount, amount > 0 {
+                Text(String(format: "− SRD %.2f", amount))
+                    .font(AppFont.titleSmall())
+                    .foregroundStyle(AppColors.boltGreen)
+            }
+        }
+        .padding(14)
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.r16))
         .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)

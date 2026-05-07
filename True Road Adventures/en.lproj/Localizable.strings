@@ -95,9 +95,6 @@
 "rider.home.saved.work" = "Work";
 "rider.home.saved.work.empty" = "Add your work address";
 "rider.home.service.standard" = "Standard";
-"rider.home.service.comfort" = "Comfort";
-"rider.home.service.xl" = "XL";
-"rider.home.service.green" = "Green";
 "rider.home.active_ride" = "Active ride";
 "rider.home.destination" = "Destination";
 "rider.home.eta" = "ETA: %@ min";
@@ -316,6 +313,7 @@
 "chat.title" = "Chat";
 "chat.ride_prefix" = "Ride #%@";
 "chat.message.placeholder" = "Message...";
+"chat.counterpart_no_phone" = "No phone number is available for this person, or calling is not allowed on this device.";
 
 /* ===== SUPPORT ===== */
 "support.title" = "Help & Support";
@@ -526,6 +524,7 @@
 "action.share" = "Share";
 "action.cancel_short" = "Cancel";
 "action.chat" = "Chat";
+"action.ok" = "OK";
 
 /* ===== ROUTE LABELS ===== */
 "route.pickup" = "Pick-up";
@@ -556,6 +555,8 @@
 "ride.cancel.message" = "Are you sure you want to cancel this ride?";
 "ride.cancel.confirm" = "Cancel";
 "ride.cancel.back" = "Back";
+"ride.cancel.error.title" = "Cannot cancel";
+"ride.cancel.error.driver_accepted" = "This ride can no longer be cancelled because a driver has already accepted it.";
 "ride.rate.button" = "Rate ride";
 "ride.rate.submitted" = "Rating submitted";
 "ride.rate.how_was_ride" = "How was your ride?";
@@ -577,7 +578,7 @@
 "active.ride.waiting" = "Waiting: %@";
 "active.ride.wait_rate" = "SRD 3.33/min waiting";
 "active.ride.stop_wait" = "Stop waiting";
-"active.ride.start_wait" = "Wait";
+"active.ride.start_wait" = "Start wait timer";
 "active.ride.arrived_customer" = "I'm at the customer";
 "active.ride.passenger_picked_up" = "Passenger picked up";
 "active.ride.complete_ride" = "Complete ride";
@@ -626,9 +627,6 @@
 "home.active_ride" = "Active ride";
 "home.eta" = "ETA: %d min";
 "home.service.standard" = "Standard";
-"home.service.comfort" = "Comfort";
-"home.service.xl" = "XL";
-"home.service.green" = "Green";
 
 /* ===== DRIVER HOME ===== */
 "driver.home.online" = "Online";
@@ -654,9 +652,24 @@
 "driver.pending.title" = "Account under review";
 "driver.pending.body" = "Your application is being reviewed by an administrator. You will be notified once your account is approved.";
 
+/* ===== DISCOUNT CODES ===== */
+"discount.code.title" = "Discount code";
+"discount.code.placeholder" = "Enter code (e.g. ZOMER20)";
+"discount.code.apply" = "Apply";
+"discount.code.applied" = "Code %@ applied";
+"discount.code.invalid" = "This discount code is not valid.";
+"discount.code.expired" = "This discount code has expired.";
+"discount.code.max_uses_reached" = "This discount code has reached its maximum number of uses.";
+"discount.code.already_used" = "You have already used this discount code.";
+"discount.code.min_fare" = "This discount code requires a higher minimum fare.";
+"discount.code.profile.subtitle" = "Redeem a code for ride credits";
+"discount.code.credits_added" = "SRD %.0f has been added to your ride credits.";
+
 /* ===== ADMIN ===== */
 "admin.tab.rides" = "Rides";
 "admin.tab.drivers" = "Drivers";
+"admin.tab.discounts" = "Discounts";
+"admin.tab.notifications" = "Notifications";
 "admin.tab.profile" = "Profile";
 "admin.rides.title" = "All rides";
 "admin.drivers.title" = "Drivers";
@@ -666,5 +679,32 @@
 "admin.drivers.approve" = "Approve";
 "admin.drivers.reject" = "Reject";
 "admin.drivers.reject.confirm" = "Are you sure you want to reject this driver? This will delete their account.";
+"admin.drivers.segment.pending" = "Approvals";
+"admin.drivers.segment.active" = "Active drivers";
+"admin.drivers.active.empty" = "No approved drivers";
+"admin.drivers.active.empty.body" = "Approved drivers will appear here with online status and schedules.";
+"admin.drivers.status.online" = "Online";
+"admin.drivers.status.offline" = "Offline";
+"admin.drivers.availability.on" = "Schedule on";
+"admin.drivers.schedule.title" = "Weekly schedule";
+"admin.drivers.schedule.disabled" = "This driver has not enabled their availability schedule.";
 "admin.profile.title" = "Profile";
 "active.ride.your_passenger" = "Your passenger";
+
+/* ===== DRIVER AVAILABILITY SCHEDULE ===== */
+"driver.availability.title" = "My Schedule";
+"driver.availability.master_toggle" = "Enable automatic schedule";
+"driver.availability.master_subtitle" = "Go online/offline automatically based on your hours";
+"driver.availability.schedule_header" = "Weekly availability";
+"driver.availability.day.monday" = "Monday";
+"driver.availability.day.tuesday" = "Tuesday";
+"driver.availability.day.wednesday" = "Wednesday";
+"driver.availability.day.thursday" = "Thursday";
+"driver.availability.day.friday" = "Friday";
+"driver.availability.day.saturday" = "Saturday";
+"driver.availability.day.sunday" = "Sunday";
+"driver.availability.start" = "From";
+"driver.availability.end" = "Until";
+"driver.availability.save" = "Save schedule";
+"driver.availability.saved" = "Schedule saved";
+"driver.profile.row.availability" = "My Schedule";

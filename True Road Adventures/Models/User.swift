@@ -37,6 +37,36 @@ extension VehicleInfo: Codable {
     }
 }
 
+struct AvailabilitySlot: Hashable, Sendable {
+    var isEnabled: Bool
+    var startTime: String
+    var endTime: String
+
+    nonisolated init(isEnabled: Bool = true, startTime: String = "08:00", endTime: String = "17:00") {
+        self.isEnabled = isEnabled
+        self.startTime = startTime
+        self.endTime   = endTime
+    }
+}
+
+extension AvailabilitySlot: Codable {
+    private enum CodingKeys: String, CodingKey { case isEnabled, startTime, endTime }
+
+    nonisolated init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        isEnabled = (try c.decodeIfPresent(Bool.self,   forKey: .isEnabled)) ?? true
+        startTime = (try c.decodeIfPresent(String.self, forKey: .startTime)) ?? "08:00"
+        endTime   = (try c.decodeIfPresent(String.self, forKey: .endTime))   ?? "17:00"
+    }
+
+    nonisolated func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(isEnabled, forKey: .isEnabled)
+        try c.encode(startTime, forKey: .startTime)
+        try c.encode(endTime,   forKey: .endTime)
+    }
+}
+
 struct SavedPlaces: Hashable, Sendable {
     var home: String?
     var work: String?
@@ -113,6 +143,8 @@ struct User: Identifiable, Hashable, Sendable {
     var referralCode: String
     var rideCredits: Double
     var referredBy: String?
+    var weeklyAvailability: [String: AvailabilitySlot]
+    var availabilityEnabled: Bool
 
     nonisolated init(
         id: String,
@@ -131,7 +163,9 @@ struct User: Identifiable, Hashable, Sendable {
         isApproved: Bool = true,
         referralCode: String = "",
         rideCredits: Double = 0,
-        referredBy: String? = nil
+        referredBy: String? = nil,
+        weeklyAvailability: [String: AvailabilitySlot] = [:],
+        availabilityEnabled: Bool = false
     ) {
         self.id                     = id
         self.email                  = email
@@ -150,6 +184,8 @@ struct User: Identifiable, Hashable, Sendable {
         self.referralCode           = referralCode
         self.rideCredits            = rideCredits
         self.referredBy             = referredBy
+        self.weeklyAvailability     = weeklyAvailability
+        self.availabilityEnabled    = availabilityEnabled
     }
 }
 
@@ -159,6 +195,7 @@ extension User: Codable {
         case role, isDriverOnline, vehicle, savedPlaces, preferences
         case rating, completedRides, hasCompletedOnboarding, isApproved
         case referralCode, rideCredits, referredBy
+        case weeklyAvailability, availabilityEnabled
     }
 
     nonisolated init(from decoder: Decoder) throws {
@@ -177,9 +214,11 @@ extension User: Codable {
         completedRides         = (try c.decodeIfPresent(Int.self,          forKey: .completedRides))         ?? 0
         hasCompletedOnboarding = (try c.decodeIfPresent(Bool.self,         forKey: .hasCompletedOnboarding)) ?? false
         isApproved             = (try c.decodeIfPresent(Bool.self,         forKey: .isApproved))             ?? true
-        referralCode           = (try c.decodeIfPresent(String.self,       forKey: .referralCode))           ?? ""
-        rideCredits            = (try c.decodeIfPresent(Double.self,       forKey: .rideCredits))            ?? 0
-        referredBy             = try  c.decodeIfPresent(String.self,       forKey: .referredBy)
+        referralCode           = (try c.decodeIfPresent(String.self,                          forKey: .referralCode))        ?? ""
+        rideCredits            = (try c.decodeIfPresent(Double.self,                          forKey: .rideCredits))         ?? 0
+        referredBy             = try  c.decodeIfPresent(String.self,                          forKey: .referredBy)
+        weeklyAvailability     = (try c.decodeIfPresent([String: AvailabilitySlot].self,      forKey: .weeklyAvailability))  ?? [:]
+        availabilityEnabled    = (try c.decodeIfPresent(Bool.self,                            forKey: .availabilityEnabled)) ?? false
     }
 
     nonisolated func encode(to encoder: Encoder) throws {
@@ -201,5 +240,7 @@ extension User: Codable {
         try c.encode(referralCode,                  forKey: .referralCode)
         try c.encode(rideCredits,                   forKey: .rideCredits)
         try c.encodeIfPresent(referredBy,           forKey: .referredBy)
+        try c.encode(weeklyAvailability,            forKey: .weeklyAvailability)
+        try c.encode(availabilityEnabled,           forKey: .availabilityEnabled)
     }
 }

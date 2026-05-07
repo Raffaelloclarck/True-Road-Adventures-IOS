@@ -12,6 +12,7 @@ struct DriverApp: App {
         FontRegistrar.registerFonts()
         container = AppContainer(appMode: .driver)
         appDelegate.pushService = container.pushService
+        appDelegate.pushNavigationStore = container.pushNavigationStore
     }
 
     var body: some Scene {
@@ -23,6 +24,8 @@ struct DriverApp: App {
                     .environmentObject(container.locationService)
                     .environmentObject(container.rideService)
                     .environmentObject(container.networkMonitor)
+                    .environmentObject(container.pushNavigationStore)
+                    .environmentObject(container.discountCodeService)
                     .environment(container.languageManager)
                     .onOpenURL { GIDSignIn.sharedInstance.handle($0) }
             }

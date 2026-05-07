@@ -23,6 +23,13 @@ final class RiderHomeViewModel: ObservableObject {
     }
 }
 
+// MARK: - Ride request presentation item
+
+private struct RideRequestPresentation: Identifiable {
+    let id = UUID()
+    let prefillDestination: String?
+}
+
 // MARK: - Main View
 
 struct RiderHomeView: View {
@@ -31,18 +38,25 @@ struct RiderHomeView: View {
     @EnvironmentObject private var locationService: LocationService
     @EnvironmentObject private var authService: AuthService
     @EnvironmentObject private var networkMonitor: NetworkMonitor
+    @EnvironmentObject private var pushNavigationStore: PushNavigationStore
+    @EnvironmentObject private var discountCodeService: DiscountCodeService
     @Environment(\.openDrawer) private var openDrawer
 
-    @State private var showRideRequest = false
+    @State private var rideRequestPresentation: RideRequestPresentation? = nil
     @State private var showRideRequestScheduled = false
     @State private var showActiveRideFull = false
+    @State private var pendingPresentChatAfterRidePush = false
     @State private var capturedActiveRide: Ride? = nil
     @State private var showChat = false
     @State private var showSavedPlaces = false
-    @State private var prefillDestination: String? = nil
+    @State private var showPromotions = false
     @State private var showCompletionFromHome = false
     @State private var completedRideForHome: Ride? = nil
     @State private var isCancellingRide = false
+    @State private var cancelError: Error? = nil
+    // Optimistically hide the active-ride card the moment the user confirms
+    // cancel, without waiting for the Firestore listener round-trip.
+    @State private var cancelledRideId: String? = nil
 
     // Route polyline shown on the home map while an active ride is in progress.
     @State private var homeRoutePoints: [Coordinate2D] = []
@@ -70,7 +84,8 @@ struct RiderHomeView: View {
 
                 if let ride = rideService.activeRide,
                    ride.status != .cancelled,
-                   ride.status != .completed {
+                   ride.status != .completed,
+                   ride.id != cancelledRideId {
                     activeRideSheet(ride: ride)
                 } else {
                     searchSheet
@@ -82,12 +97,13 @@ struct RiderHomeView: View {
         .onAppear {
             locationService.startUpdating()
         }
-        .fullScreenCover(isPresented: $showRideRequest, onDismiss: { prefillDestination = nil }) {
-            RiderRideRequestView(scheduledAt: nil, prefillDestination: prefillDestination)
+        .fullScreenCover(item: $rideRequestPresentation) { presentation in
+            RiderRideRequestView(scheduledAt: nil, prefillDestination: presentation.prefillDestination)
                 .environmentObject(rideService)
                 .environmentObject(networkMonitor)
                 .environmentObject(locationService)
                 .environmentObject(authService)
+                .environmentObject(discountCodeService)
         }
         .fullScreenCover(isPresented: $showRideRequestScheduled) {
             RiderRideRequestView(scheduledAt: viewModel.scheduledAt)
@@ -95,10 +111,17 @@ struct RiderHomeView: View {
                 .environmentObject(networkMonitor)
                 .environmentObject(locationService)
                 .environmentObject(authService)
+                .environmentObject(discountCodeService)
         }
-        .fullScreenCover(isPresented: $showActiveRideFull, onDismiss: { capturedActiveRide = nil }) {
+        .fullScreenCover(isPresented: $showActiveRideFull, onDismiss: {
+            capturedActiveRide = nil
+            pendingPresentChatAfterRidePush = false
+        }) {
             if let ride = capturedActiveRide {
-                RiderActiveRideView(ride: ride)
+                RiderActiveRideView(
+                    ride: ride,
+                    presentChatOnAppear: pendingPresentChatAfterRidePush
+                )
                     .environmentObject(rideService)
                     .environmentObject(networkMonitor)
                     .environmentObject(authService)
@@ -122,25 +145,28 @@ struct RiderHomeView: View {
                     .environmentObject(authService)
             }
         }
+        .sheet(isPresented: $showPromotions) {
+            NavigationStack {
+                RiderPromotionsView(currentUser: viewModel.currentUser)
+                    .environmentObject(discountCodeService)
+            }
+        }
         .sheet(isPresented: $showChat) {
             if let ride = rideService.activeRide {
                 NavigationStack {
                     ChatView(rideId: ride.id)
                         .environmentObject(authService)
+                        .environmentObject(rideService)
                 }
             }
         }
-        // Subscribe directly to the active ride so we can detect acceptance,
-        // completion and cancellation even when the full active-ride view is not open yet.
+        // Subscribe directly to the active ride so we can detect completion and
+        // cancellation even when the full active-ride view is not open yet.
+        // Auto-navigation for accepted/arrived/pickedUp is handled via onChange above.
         .task(id: rideService.activeRide?.id) {
             guard let activeRide = rideService.activeRide else { return }
             for await updatedRide in rideService.subscribeToRide(activeRide.id) {
                 guard let updated = updatedRide else { break }
-                // Automatically open the full active-ride screen when the driver accepts.
-                if updated.status == .accepted, !showActiveRideFull {
-                    capturedActiveRide = updated
-                    showActiveRideFull = true
-                }
                 if updated.status == .completed, !showActiveRideFull, !showCompletionFromHome {
                     completedRideForHome = updated
                     showCompletionFromHome = true
@@ -156,26 +182,59 @@ struct RiderHomeView: View {
             if newRide == nil {
                 homeRoutePoints = []
                 homeTrafficSegments = []
+                cancelledRideId = nil
+            }
+            if !showActiveRideFull,
+               let newRide,
+               newRide.status == .accepted || newRide.status == .arrived || newRide.status == .pickedUp {
+                capturedActiveRide = newRide
+                showActiveRideFull = true
+                return
             }
             guard showActiveRideFull, let newRide else { return }
             capturedActiveRide = newRide
+        }
+        .onAppear {
+            handlePushIntent(pushNavigationStore.pending)
+        }
+        .onChange(of: pushNavigationStore.pending) { _, intent in
+            handlePushIntent(intent)
         }
         // Fetch the route whenever the ride status advances or the driver location
         // first appears. The key does not change on every GPS update, so this
         // fires only a handful of times per trip.
         .task(id: homeRouteKey) {
             guard let ride = rideService.activeRide,
-                  ride.status == .accepted || ride.status == .arrived || ride.status == .pickedUp
+                  ride.status == .searching || ride.status == .accepted || ride.status == .arrived || ride.status == .pickedUp
             else { return }
-            let destination: LatLng = ride.status == .pickedUp
-                ? ride.destinationLocation
-                : ride.pickupLocation
-            let origin = ride.driverLocation ?? ride.pickupLocation
+            let origin: LatLng
+            let destination: LatLng
+            if ride.status == .searching {
+                // No driver yet — show the full trip route (pickup → destination).
+                origin = ride.pickupLocation
+                destination = ride.destinationLocation
+            } else if ride.status == .pickedUp {
+                // Rider is in the car — show remaining route to destination.
+                origin = ride.driverLocation ?? ride.pickupLocation
+                destination = ride.destinationLocation
+            } else {
+                // Driver accepted/arrived — show route from driver to pickup.
+                origin = ride.driverLocation ?? ride.pickupLocation
+                destination = ride.pickupLocation
+            }
             let result = await rideService.fetchRoute(from: origin, to: destination)
             if !result.points.isEmpty {
                 homeRoutePoints = result.points
                 homeTrafficSegments = result.trafficSegments
             }
+        }
+        .alert(
+            String(localized: "ride.cancel.error.title"),
+            isPresented: Binding(get: { cancelError != nil }, set: { if !$0 { cancelError = nil } })
+        ) {
+            Button(String(localized: "action.ok"), role: .cancel) { cancelError = nil }
+        } message: {
+            Text(cancelError?.localizedDescription ?? "")
         }
     }
 
@@ -263,7 +322,7 @@ struct RiderHomeView: View {
 
     private var searchBar: some View {
         Button {
-            showRideRequest = true
+            rideRequestPresentation = RideRequestPresentation(prefillDestination: nil)
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: "magnifyingglass")
@@ -344,26 +403,62 @@ struct RiderHomeView: View {
     }
 
     private func showRideRequestWithDestination(_ destination: String) {
-        prefillDestination = destination
-        showRideRequest = true
+        rideRequestPresentation = RideRequestPresentation(prefillDestination: destination)
+    }
+
+    private func handlePushIntent(_ intent: PushNotificationIntent?) {
+        guard let intent else { return }
+        switch intent.screen {
+        case .home:
+            pushNavigationStore.clearPending()
+            return
+        case .activeRide:
+            guard let rideId = intent.rideId else { pushNavigationStore.clearPending(); return }
+            pendingPresentChatAfterRidePush = false
+            openActiveRideFromPushIfNeeded(rideId: rideId)
+        case .chat:
+            guard let rideId = intent.rideId else { pushNavigationStore.clearPending(); return }
+            pendingPresentChatAfterRidePush = true
+            openActiveRideFromPushIfNeeded(rideId: rideId)
+        case .promotions:
+            showPromotions = true
+            pushNavigationStore.clearPending()
+        }
+    }
+
+    private func openActiveRideFromPushIfNeeded(rideId: String) {
+        if let activeRide = rideService.activeRide, activeRide.id == rideId {
+            capturedActiveRide = activeRide
+            showActiveRideFull = true
+            pushNavigationStore.clearPending()
+            return
+        }
+        // Race: activeRide not yet in RideService — subscribe until the ride arrives.
+        pushNavigationStore.clearPending()
+        Task {
+            for await ride in rideService.subscribeToRide(rideId) {
+                guard let ride else { break }
+                await MainActor.run {
+                    capturedActiveRide = ride
+                    showActiveRideFull = true
+                }
+                break
+            }
+        }
     }
 
     private var serviceTiles: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
-                serviceTile(icon: "car.fill",   label: String(localized: "home.service.standard"), price: "SRD 40")
-                serviceTile(icon: "car.2.fill", label: String(localized: "home.service.comfort"),  price: "SRD 70")
-                serviceTile(icon: "suv.side.fill", label: String(localized: "home.service.xl"),    price: "SRD 90")
-                serviceTile(icon: "car.fill",   label: String(localized: "home.service.green"),    price: "SRD 60")
-            }
-            .padding(.horizontal, 2)
-            .padding(.vertical, 4)
+        HStack {
+            serviceTile(icon: "car.fill", label: String(localized: "home.service.standard"), price: "SRD \(Int(FareCalculator.startFare))")
+            Spacer()
         }
+        .padding(.horizontal, 2)
+        .padding(.vertical, 4)
     }
 
     private func serviceTile(icon: String, label: String, price: String) -> some View {
         Button {
-            showRideRequest = true
+            rideRequestPresentation = RideRequestPresentation(prefillDestination: nil)
         } label: {
             VStack(spacing: 8) {
                 Image(systemName: icon)
@@ -431,9 +526,20 @@ struct RiderHomeView: View {
                         ) {
                             guard !isCancellingRide else { return }
                             isCancellingRide = true
+                            let rideId = ride.id
                             Task {
-                                try? await rideService.updateStatus(ride.id, status: .cancelled)
-                                await MainActor.run { isCancellingRide = false }
+                                do {
+                                    try await rideService.updateStatus(rideId, status: .cancelled)
+                                    await MainActor.run {
+                                        cancelledRideId = rideId
+                                        isCancellingRide = false
+                                    }
+                                } catch {
+                                    await MainActor.run {
+                                        isCancellingRide = false
+                                        cancelError = error
+                                    }
+                                }
                             }
                         }
                     }
@@ -469,4 +575,5 @@ struct RiderHomeView: View {
     )
     .environmentObject(LocationService())
     .environmentObject(NetworkMonitor.preview)
+    .environmentObject(PushNavigationStore())
 }

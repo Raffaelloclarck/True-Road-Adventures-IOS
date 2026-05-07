@@ -8,6 +8,7 @@ struct RiderTabView: View {
     @EnvironmentObject private var rideService: RideService
     @EnvironmentObject private var locationService: LocationService
     @EnvironmentObject private var networkMonitor: NetworkMonitor
+    @EnvironmentObject private var pushNavigationStore: PushNavigationStore
 
     @State private var selectedTab: RiderTab = .home
     @State private var isDrawerOpen = false
@@ -49,7 +50,8 @@ struct RiderTabView: View {
                 profileDestinationView(dest)
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: .TRAOpenRide)) { _ in
+        .onChange(of: pushNavigationStore.pending) { _, intent in
+            guard intent != nil else { return }
             withAnimation(.spring(response: 0.35)) { selectedTab = .home }
         }
         .onChange(of: rideService.activeRide) { oldRide, newRide in

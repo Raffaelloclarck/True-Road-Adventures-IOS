@@ -7,10 +7,22 @@ import CryptoKit
 
 @MainActor
 func signInWithGoogle(authService: AuthService) async {
-    guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-          let root = scene.windows.first?.rootViewController else { return }
+    // Prevent multiple concurrent sign-in attempts when one is already in progress.
+    guard !authService.state.isLoading else { return }
+    guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene else { return }
+    // keyWindow can be nil while a sheet is animating or on certain simulator builds,
+    // so use the same multi-fallback pattern as AppleSignInCoordinator.presentationAnchor.
+    let window = scene.windows.first(where: { $0.isKeyWindow }) ?? scene.windows.first
+    guard let root = window?.rootViewController else { return }
+    // Walk up to the topmost presented controller so SFAuthenticationViewController
+    // is presented from a stable, fully-initialised controller. Presenting from a
+    // controller that SwiftUI may still be configuring causes the
+    // "deallocating while view is loading" warning.
+    var presenter = root
+    while let next = presenter.presentedViewController { presenter = next }
+
     do {
-        let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: root)
+        let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: presenter)
         guard let idToken = result.user.idToken?.tokenString else {
             authService.setError("Google-token ontbreekt")
             return
@@ -18,6 +30,11 @@ func signInWithGoogle(authService: AuthService) async {
         let accessToken = result.user.accessToken.tokenString
         try await authService.signInWithGoogle(idToken: idToken, accessToken: accessToken)
     } catch {
+        let nsErr = error as NSError
+        // Code -5 = GIDSignInError.canceled — user dismissed the sheet OR the system
+        // cancelled the OAuth flow (XPC invalidation). Suppress silently; the user
+        // can tap the button again. Same pattern as Apple Sign-In suppressing code 1001.
+        guard !(nsErr.domain == "com.google.GIDSignIn" && nsErr.code == -5) else { return }
         authService.setError(error.localizedDescription)
     }
 }

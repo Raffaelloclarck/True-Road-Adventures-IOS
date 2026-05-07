@@ -19,6 +19,8 @@ struct TRAGoogleMapView: UIViewRepresentable {
     var followDriver: Bool
     var showTraffic: Bool
     var onUserPanned: () -> Void
+    /// Measured height of bottom UI (sheet / pill) — offsets the nav camera so the driver marker stays visible.
+    var bottomInset: CGFloat = 0
     /// Distance to the next turn in metres — drives approach zoom.
     var distanceToNextTurnM: Int = 0
     /// When this value changes the coordinator resets its camera-fitting state
@@ -90,12 +92,12 @@ struct TRAGoogleMapView: UIViewRepresentable {
             c.applyMapStyle(mapView, dark: dark)
         }
 
-        // During navigation push the effective camera centre upward so the
-        // driver arrow lands in the lower ~30 % of the visible screen
-        // (Google Maps navigation layout). Clear padding in overview mode.
+        // During navigation offset the camera so the driver arrow sits above the bottom overlay.
+        // Prefer measured `bottomInset`; until layout completes, fall back to 30 % of screen height.
         let screenH = mapView.window?.windowScene?.screen.bounds.height ?? mapView.bounds.height
+        let inset = bottomInset > 0 ? bottomInset : screenH * 0.30
         let targetPadding: UIEdgeInsets = followDriver
-            ? UIEdgeInsets(top: 0, left: 0, bottom: screenH * 0.30, right: 0)
+            ? UIEdgeInsets(top: 0, left: 0, bottom: inset, right: 0)
             : .zero
         if mapView.padding != targetPadding {
             mapView.padding = targetPadding
@@ -141,15 +143,70 @@ struct TRAGoogleMapView: UIViewRepresentable {
 
         // MARK: Polyline
 
+        /// White outline + coloured stroke so the route reads as one path on the basemap.
+        private func appendOutlinedPolyline(path: GMSMutablePath, strokeColor: UIColor, on mapView: GMSMapView) {
+            let border = GMSPolyline(path: path)
+            border.strokeWidth = 12
+            border.strokeColor = .white
+            border.geodesic = true
+            border.map = mapView
+            routePolylines.append(border)
+
+            let line = GMSPolyline(path: path)
+            line.strokeWidth = 8
+            line.strokeColor = strokeColor
+            line.geodesic = true
+            line.map = mapView
+            routePolylines.append(line)
+        }
+
+        private func closestRouteIndex(to coord: Coordinate2D, in route: [Coordinate2D]) -> Int {
+            let from = LatLng(latitude: coord.latitude, longitude: coord.longitude)
+            var bestI = 0
+            var bestD = Double.greatestFiniteMagnitude
+            for (i, pt) in route.enumerated() {
+                let d = haversineM(from, LatLng(latitude: pt.latitude, longitude: pt.longitude))
+                if d < bestD {
+                    bestD = d
+                    bestI = i
+                }
+            }
+            return bestI
+        }
+
+        /// Drop vertices that lie entirely before the driver on the decoded polyline (traffic segment path).
+        private func trimTrafficSegment(_ seg: TrafficSegment, routePoints: [Coordinate2D], startRouteIndex: Int) -> TrafficSegment? {
+            guard !seg.points.isEmpty, !routePoints.isEmpty else { return nil }
+            guard startRouteIndex > 0 else { return seg }
+
+            var firstKeep: Int?
+            for (j, p) in seg.points.enumerated() {
+                if closestRouteIndex(to: p, in: routePoints) >= startRouteIndex {
+                    firstKeep = j
+                    break
+                }
+            }
+            guard let fk = firstKeep else { return nil }
+
+            var trimmed = Array(seg.points[fk...])
+            if trimmed.count < 2 {
+                if fk > 0 {
+                    trimmed = [seg.points[fk - 1], seg.points[fk]]
+                } else if fk + 1 < seg.points.count {
+                    trimmed = [seg.points[fk], seg.points[fk + 1]]
+                } else {
+                    return nil
+                }
+            }
+            return TrafficSegment(points: trimmed, speed: seg.speed)
+        }
+
         func updatePolyline(on mapView: GMSMapView) {
             routePolylines.forEach { $0.map = nil }
             routePolylines.removeAll()
 
             if parent.routePoints.count >= 2 {
-                // ── Trim consumed route ───────────────────────────────────────
-                // During navigation find the polyline index closest to the
-                // driver and only draw from there forward, so the consumed
-                // portion disappears (Google Maps behaviour).
+                var routeStartIdx = 0
                 var displayPoints = parent.routePoints
                 if parent.followDriver, let drv = parent.driverLocation {
                     var minDist = Double.greatestFiniteMagnitude
@@ -158,35 +215,35 @@ struct TRAGoogleMapView: UIViewRepresentable {
                         let d = haversineM(drv, LatLng(latitude: pt.latitude, longitude: pt.longitude))
                         if d < minDist { minDist = d; startIdx = i }
                     }
+                    routeStartIdx = startIdx
                     if startIdx > 0 {
                         displayPoints = Array(parent.routePoints[startIdx...])
                     }
                 }
 
                 if !parent.trafficSegments.isEmpty {
-                    for segment in parent.trafficSegments {
+                    let segmentsToDraw: [TrafficSegment]
+                    if parent.followDriver, parent.driverLocation != nil {
+                        segmentsToDraw = parent.trafficSegments.compactMap {
+                            trimTrafficSegment($0, routePoints: parent.routePoints, startRouteIndex: routeStartIdx)
+                        }
+                    } else {
+                        segmentsToDraw = parent.trafficSegments
+                    }
+                    for segment in segmentsToDraw where segment.points.count >= 2 {
                         let path = GMSMutablePath()
                         for pt in segment.points {
                             path.add(CLLocationCoordinate2D(latitude: pt.latitude, longitude: pt.longitude))
                         }
-                        let polyline = GMSPolyline(path: path)
-                        polyline.strokeWidth = 5
-                        polyline.strokeColor = segment.speed.strokeColor
-                        polyline.geodesic = true
-                        polyline.map = mapView
-                        routePolylines.append(polyline)
+                        appendOutlinedPolyline(path: path, strokeColor: segment.speed.strokeColor, on: mapView)
                     }
-                } else {
+                } else if displayPoints.count >= 2 {
                     let path = GMSMutablePath()
                     for pt in displayPoints {
                         path.add(CLLocationCoordinate2D(latitude: pt.latitude, longitude: pt.longitude))
                     }
-                    let polyline = GMSPolyline(path: path)
-                    polyline.strokeWidth = 5
-                    polyline.strokeColor = UIColor(red: 0x00 / 255, green: 0xC9 / 255, blue: 0xA7 / 255, alpha: 1)
-                    polyline.geodesic = true
-                    polyline.map = mapView
-                    routePolylines.append(polyline)
+                    let teal = UIColor(red: 0x00 / 255, green: 0xC9 / 255, blue: 0xA7 / 255, alpha: 1)
+                    appendOutlinedPolyline(path: path, strokeColor: teal, on: mapView)
                 }
 
                 if !parent.followDriver && !routeBoundsFitted {
@@ -214,11 +271,8 @@ struct TRAGoogleMapView: UIViewRepresentable {
                     let path = GMSMutablePath()
                     path.add(CLLocationCoordinate2D(latitude: s.latitude, longitude: s.longitude))
                     path.add(CLLocationCoordinate2D(latitude: e.latitude, longitude: e.longitude))
-                    let polyline = GMSPolyline(path: path)
-                    polyline.strokeWidth = 3
-                    polyline.strokeColor = UIColor(red: 0x00 / 255, green: 0xC9 / 255, blue: 0xA7 / 255, alpha: 0.4)
-                    polyline.map = mapView
-                    routePolylines.append(polyline)
+                    let dimTeal = UIColor(red: 0x00 / 255, green: 0xC9 / 255, blue: 0xA7 / 255, alpha: 0.4)
+                    appendOutlinedPolyline(path: path, strokeColor: dimTeal, on: mapView)
                 }
             }
         }
@@ -254,7 +308,8 @@ struct TRAGoogleMapView: UIViewRepresentable {
                 // at highway speeds (Google Maps uses ~400 m on motorways).
                 let lookAheadMeters: Double
                 switch parent.speedKmh {
-                case ..<10:  lookAheadMeters = 60
+                case ..<3:   lookAheadMeters = 0    // stationary — centre on driver
+                case ..<10:  lookAheadMeters = 20
                 case ..<20:  lookAheadMeters = 100
                 case ..<50:  lookAheadMeters = 180
                 case ..<90:  lookAheadMeters = 280
@@ -306,8 +361,8 @@ struct TRAGoogleMapView: UIViewRepresentable {
 
                 let tilt: Double
                 switch parent.speedKmh {
-                case ..<5:   tilt = 40
-                case ..<20:  tilt = 50
+                case ..<5:   tilt = 50
+                case ..<20:  tilt = 55
                 case ..<50:  tilt = 58
                 case ..<90:  tilt = 65
                 default:     tilt = 70
@@ -335,6 +390,9 @@ struct TRAGoogleMapView: UIViewRepresentable {
 
             } else if !parent.followDriver {
                 wasFollowing = false
+                // Keep the arrow pointing the right direction even while the user
+                // has panned away. Use the raw bearing (no camera EMA needed here).
+                driverMarker?.rotation = parent.bearing
                 if !initialBoundsSet {
                     if let pickup = parent.pickup, let dest = parent.destination {
                         initialBoundsSet = true
@@ -543,7 +601,9 @@ struct TRAGoogleMapView: UIViewRepresentable {
                     driverMarker = m
                 }
                 driverMarker?.position = CLLocationCoordinate2D(latitude: loc.latitude, longitude: loc.longitude)
-                driverMarker?.rotation = parent.bearing
+                // Rotation is managed exclusively by updateCamera using smoothBearing.
+                // Setting raw parent.bearing here would override the smoothed value
+                // and cause the arrow to jitter, especially when followDriver = false.
             } else {
                 driverMarker?.map = nil
                 driverMarker = nil

@@ -95,9 +95,6 @@
 "rider.home.saved.work" = "Arbeit";
 "rider.home.saved.work.empty" = "Arbeitsadresse hinzufügen";
 "rider.home.service.standard" = "Standard";
-"rider.home.service.comfort" = "Komfort";
-"rider.home.service.xl" = "XL";
-"rider.home.service.green" = "Grün";
 "rider.home.active_ride" = "Aktive Fahrt";
 "rider.home.destination" = "Ziel";
 "rider.home.eta" = "ETA: %@ min";
@@ -316,6 +313,7 @@
 "chat.title" = "Chat";
 "chat.ride_prefix" = "Fahrt #%@";
 "chat.message.placeholder" = "Nachricht...";
+"chat.counterpart_no_phone" = "Für diese Person ist keine Telefonnummer hinterlegt oder Anrufe sind auf diesem Gerät nicht möglich.";
 
 /* ===== SUPPORT ===== */
 "support.title" = "Hilfe & Support";
@@ -526,6 +524,7 @@
 "action.share" = "Teilen";
 "action.cancel_short" = "Abbrechen";
 "action.chat" = "Chat";
+"action.ok" = "OK";
 
 /* ===== ROUTE LABELS ===== */
 "route.pickup" = "Abholung";
@@ -556,6 +555,8 @@
 "ride.cancel.message" = "Bist du sicher, dass du diese Fahrt stornieren möchtest?";
 "ride.cancel.confirm" = "Stornieren";
 "ride.cancel.back" = "Zurück";
+"ride.cancel.error.title" = "Stornierung nicht möglich";
+"ride.cancel.error.driver_accepted" = "Diese Fahrt kann nicht mehr storniert werden, da ein Fahrer sie bereits angenommen hat.";
 "ride.rate.button" = "Fahrt bewerten";
 "ride.rate.submitted" = "Bewertung abgesendet";
 "ride.rate.how_was_ride" = "Wie war deine Fahrt?";
@@ -577,7 +578,7 @@
 "active.ride.waiting" = "Warten: %@";
 "active.ride.wait_rate" = "SRD 3.33/min Wartezeit";
 "active.ride.stop_wait" = "Warten beenden";
-"active.ride.start_wait" = "Warten";
+"active.ride.start_wait" = "Wartezeit starten";
 "active.ride.arrived_customer" = "Ich bin beim Kunden";
 "active.ride.passenger_picked_up" = "Fahrgast eingestiegen";
 "active.ride.complete_ride" = "Fahrt beenden";
@@ -626,9 +627,6 @@
 "home.active_ride" = "Aktive Fahrt";
 "home.eta" = "ETA: %d min";
 "home.service.standard" = "Standard";
-"home.service.comfort" = "Komfort";
-"home.service.xl" = "XL";
-"home.service.green" = "Grün";
 
 /* ===== DRIVER HOME ===== */
 "driver.home.online" = "Online";
@@ -654,9 +652,24 @@
 "driver.pending.title" = "Konto wird überprüft";
 "driver.pending.body" = "Ihr Antrag wird von einem Administrator geprüft. Sie werden benachrichtigt, sobald Ihr Konto genehmigt wurde.";
 
+/* ===== RABATTCODES ===== */
+"discount.code.title" = "Rabattcode";
+"discount.code.placeholder" = "Code eingeben (z.B. SOMMER20)";
+"discount.code.apply" = "Einlösen";
+"discount.code.applied" = "Code %@ eingelöst";
+"discount.code.invalid" = "Dieser Rabattcode ist nicht gültig.";
+"discount.code.expired" = "Dieser Rabattcode ist abgelaufen.";
+"discount.code.max_uses_reached" = "Dieser Rabattcode hat die maximale Anzahl an Verwendungen erreicht.";
+"discount.code.already_used" = "Du hast diesen Rabattcode bereits verwendet.";
+"discount.code.min_fare" = "Dieser Rabattcode erfordert einen höheren Mindestfahrpreis.";
+"discount.code.profile.subtitle" = "Code gegen Fahrtguthaben einlösen";
+"discount.code.credits_added" = "SRD %.0f wurde deinem Fahrtguthaben hinzugefügt.";
+
 /* ===== ADMIN ===== */
 "admin.tab.rides" = "Fahrten";
 "admin.tab.drivers" = "Fahrer";
+"admin.tab.discounts" = "Rabatte";
+"admin.tab.notifications" = "Meldungen";
 "admin.tab.profile" = "Profil";
 "admin.rides.title" = "Alle Fahrten";
 "admin.drivers.title" = "Fahrer";
@@ -666,5 +679,32 @@
 "admin.drivers.approve" = "Genehmigen";
 "admin.drivers.reject" = "Ablehnen";
 "admin.drivers.reject.confirm" = "Möchten Sie diesen Fahrer wirklich ablehnen? Dadurch wird sein Konto gelöscht.";
+"admin.drivers.segment.pending" = "Genehmigungen";
+"admin.drivers.segment.active" = "Aktive Fahrer";
+"admin.drivers.active.empty" = "Keine genehmigten Fahrer";
+"admin.drivers.active.empty.body" = "Genehmigte Fahrer erscheinen hier mit Online-Status und Dienstplan.";
+"admin.drivers.status.online" = "Online";
+"admin.drivers.status.offline" = "Offline";
+"admin.drivers.availability.on" = "Dienstplan aktiv";
+"admin.drivers.schedule.title" = "Wochenplan";
+"admin.drivers.schedule.disabled" = "Dieser Fahrer hat keine Verfügbarkeit aktiviert.";
 "admin.profile.title" = "Profil";
 "active.ride.your_passenger" = "Ihr Fahrgast";
+
+/* ===== FAHRER-VERFÜGBARKEITSPLAN ===== */
+"driver.availability.title" = "Mein Zeitplan";
+"driver.availability.master_toggle" = "Automatischen Zeitplan aktivieren";
+"driver.availability.master_subtitle" = "Automatisch online/offline gehen basierend auf Ihren Zeiten";
+"driver.availability.schedule_header" = "Wöchentliche Verfügbarkeit";
+"driver.availability.day.monday" = "Montag";
+"driver.availability.day.tuesday" = "Dienstag";
+"driver.availability.day.wednesday" = "Mittwoch";
+"driver.availability.day.thursday" = "Donnerstag";
+"driver.availability.day.friday" = "Freitag";
+"driver.availability.day.saturday" = "Samstag";
+"driver.availability.day.sunday" = "Sonntag";
+"driver.availability.start" = "Von";
+"driver.availability.end" = "Bis";
+"driver.availability.save" = "Zeitplan speichern";
+"driver.availability.saved" = "Zeitplan gespeichert";
+"driver.profile.row.availability" = "Mein Zeitplan";

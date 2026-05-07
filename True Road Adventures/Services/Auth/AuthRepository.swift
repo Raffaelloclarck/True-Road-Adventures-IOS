@@ -2,6 +2,9 @@ import Foundation
 
 protocol AuthRepository {
     func currentUser() async -> User?
+    /// Force-fetches the current user from the server, bypassing any local cache.
+    /// Used after sign-in to recover full user data when Firestore was slow.
+    func refreshCurrentUser() async -> User?
     func getUserById(_ userId: String) async -> User?
     func signIn(email: String, password: String) async throws -> (AuthSession, User)
     func register(email: String, password: String, displayName: String?, role: UserRole, referredBy: String?) async throws -> (AuthSession, User)
@@ -14,6 +17,7 @@ protocol AuthRepository {
     func updateProfile(displayName: String, phoneNumber: String) async throws -> User
     func updatePhoto(url: URL) async throws -> User
     func setDriverOnline(_ isOnline: Bool) async throws -> User
+    func saveAvailability(slots: [String: AvailabilitySlot], enabled: Bool) async throws -> User
     func updateVehicleInfo(vehicle: VehicleInfo) async throws -> User
     func updateSavedPlaces(_ saved: SavedPlaces) async throws -> User
     func updateRecentAddresses(_ addresses: [String]) async throws -> User
@@ -24,6 +28,8 @@ protocol AuthRepository {
     func signOut() async
 
     func pendingDrivers() async -> AsyncStream<[User]>
+    /// Live list of approved drivers (online status, availability, etc.) for admin directory UI.
+    func approvedDriversDirectory() async -> AsyncStream<[User]>
     func approveDriver(userId: String) async throws
     func rejectDriver(userId: String) async throws
     func applyAsDriver() async throws
@@ -42,6 +48,10 @@ actor InMemoryAuthRepository: AuthRepository {
     func currentUser() async -> User? {
         guard let session else { return nil }
         return users[session.userId]?.user
+    }
+
+    func refreshCurrentUser() async -> User? {
+        await currentUser()
     }
 
     func getUserById(_ userId: String) async -> User? {
@@ -140,6 +150,16 @@ actor InMemoryAuthRepository: AuthRepository {
         return user
     }
 
+    func saveAvailability(slots: [String: AvailabilitySlot], enabled: Bool) async throws -> User {
+        guard var user = try await requireUser() else {
+            throw NSError(domain: "Auth", code: 401, userInfo: [NSLocalizedDescriptionKey: "Niet ingelogd"])
+        }
+        user.weeklyAvailability  = slots
+        user.availabilityEnabled = enabled
+        users[user.id]?.user = user
+        return user
+    }
+
     func updateVehicleInfo(vehicle: VehicleInfo) async throws -> User {
         guard var user = try await requireUser() else {
             throw NSError(domain: "Auth", code: 401, userInfo: [NSLocalizedDescriptionKey: "Niet ingelogd"])
@@ -215,6 +235,22 @@ actor InMemoryAuthRepository: AuthRepository {
         return stream
     }
 
+    func approvedDriversDirectory() async -> AsyncStream<[User]> {
+        let (stream, continuation) = AsyncStream.makeStream(of: [User].self)
+        let approved = users.values
+            .filter { $0.user.role == .driver && $0.user.isApproved }
+            .map(\.user)
+        let sorted = approved.sorted { a, b in
+            if a.isDriverOnline != b.isDriverOnline { return a.isDriverOnline && !b.isDriverOnline }
+            let n0 = a.displayName ?? a.email ?? a.id
+            let n1 = b.displayName ?? b.email ?? b.id
+            return n0.localizedCaseInsensitiveCompare(n1) == .orderedAscending
+        }
+        continuation.yield(sorted)
+        continuation.finish()
+        return stream
+    }
+
     func approveDriver(userId: String) async throws {
         guard var entry = users[userId] else { return }
         entry.user.isApproved = true
@@ -267,6 +303,11 @@ actor ApiAuthRepository: AuthRepository {
         } catch {
             return nil
         }
+    }
+
+    func refreshCurrentUser() async -> User? {
+        cachedUser = nil
+        return await currentUser()
     }
 
     func getUserById(_ userId: String) async -> User? {
@@ -378,6 +419,18 @@ actor ApiAuthRepository: AuthRepository {
         return user
     }
 
+    func saveAvailability(slots: [String: AvailabilitySlot], enabled: Bool) async throws -> User {
+        struct Body: Encodable {
+            let availability: [String: AvailabilitySlot]
+            let availabilityEnabled: Bool
+        }
+        let user: User = try await request(
+            .init(path: "/driver/schedule", method: "PUT", body: Body(availability: slots, availabilityEnabled: enabled))
+        )
+        cachedUser = user
+        return user
+    }
+
     func updateVehicleInfo(vehicle: VehicleInfo) async throws -> User {
         let user: User = try await request(
             .init(path: "/driver/vehicle", method: "PATCH", body: vehicle)
@@ -451,6 +504,13 @@ actor ApiAuthRepository: AuthRepository {
             }
         }
         continuation.onTermination = { @Sendable _ in task.cancel() }
+        return stream
+    }
+
+    func approvedDriversDirectory() async -> AsyncStream<[User]> {
+        let (stream, continuation) = AsyncStream.makeStream(of: [User].self)
+        continuation.yield([])
+        continuation.finish()
         return stream
     }
 

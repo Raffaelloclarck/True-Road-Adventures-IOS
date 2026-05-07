@@ -13,11 +13,13 @@ final class PushService: ObservableObject {
     @Published private(set) var authorizationStatus: UNAuthorizationStatus = .notDetermined
     @Published private(set) var deviceToken: String?
 
+    private let appMode: AppMode
     private let uploadURL: URL?
     var tokenProvider: (() async -> String?)?
     var onTokenRegistered: ((String) -> Void)?
 
-    init(uploadURL: URL? = nil) {
+    init(appMode: AppMode = .customer, uploadURL: URL? = nil) {
+        self.appMode = appMode
         self.uploadURL = uploadURL
     }
 
@@ -61,8 +63,9 @@ final class PushService: ObservableObject {
         // Wait until the APNS token has been delivered via didRegisterForRemoteNotificationsWithDeviceToken.
         guard Messaging.messaging().apnsToken != nil else { return }
         guard let fcmToken = try? await Messaging.messaging().token() else { return }
+        let field = appMode == .driver ? "fcmTokenDriver" : "fcmTokenCustomer"
         try? await Firestore.firestore().collection("users").document(uid)
-            .updateData(["fcmToken": fcmToken])
+            .updateData([field: fcmToken])
         #endif
     }
 
@@ -90,7 +93,14 @@ final class PushService: ObservableObject {
         do {
             _ = try await URLSession.shared.data(for: request)
         } catch {
-            print("Push token upload failed: \(error)")
+            if let urlError = error as? URLError, urlError.code == .cannotFindHost {
+                print(
+                    "Push token upload failed: DNS/host unresolved for \(uploadURL.absoluteString). " +
+                    "Ensure api.dev.trueroad.app (or your PUSH_UPLOAD_URL) resolves and the backend is reachable. \(urlError.localizedDescription)"
+                )
+            } else {
+                print("Push token upload failed: \(error)")
+            }
         }
     }
 }

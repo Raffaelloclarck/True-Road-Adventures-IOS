@@ -16,6 +16,7 @@ final class AuthService: ObservableObject {
 
     @Published private(set) var state = State()
     @Published private(set) var pendingDrivers: [User] = []
+    @Published private(set) var approvedDrivers: [User] = []
     var onSessionChanged: ((AuthSession?) -> Void)?
 
     private let repository: AuthRepository
@@ -25,6 +26,7 @@ final class AuthService: ObservableObject {
     private let userIdKey = "auth.userId"
     private weak var languageManager: LanguageManager?
     private var pendingDriversTask: Task<Void, Never>?
+    private var approvedDriversTask: Task<Void, Never>?
 
     init(repository: AuthRepository, languageManager: LanguageManager? = nil) {
         self.repository = repository
@@ -73,6 +75,7 @@ final class AuthService: ObservableObject {
             save(session)
             setUser(user)
             await setLoading(false)
+            scheduleFirestoreRefresh()
         } catch {
             await setLoading(false, error: error.localizedDescription)
             throw error
@@ -86,6 +89,7 @@ final class AuthService: ObservableObject {
             save(session)
             setUser(user)
             await setLoading(false)
+            scheduleFirestoreRefresh()
         } catch {
             await setLoading(false, error: error.localizedDescription)
             throw error
@@ -204,6 +208,17 @@ final class AuthService: ObservableObject {
         }
     }
 
+    func saveAvailability(slots: [String: AvailabilitySlot], enabled: Bool) async {
+        await setLoading(true)
+        do {
+            let user = try await repository.saveAvailability(slots: slots, enabled: enabled)
+            state.user = user
+            await setLoading(false)
+        } catch {
+            await setLoading(false, error: error.localizedDescription)
+        }
+    }
+
     func updateVehicleInfo(vehicleType: String?, licensePlate: String?) async {
         await setLoading(true)
         do {
@@ -253,6 +268,10 @@ final class AuthService: ObservableObject {
         } catch {
             await setLoading(false, error: error.localizedDescription)
         }
+    }
+
+    func refreshUser() async {
+        await refreshUserFromStore()
     }
 
     func applyRideCredits(_ amount: Double) async {
@@ -323,12 +342,26 @@ final class AuthService: ObservableObject {
         }
     }
 
+    func startApprovedDriversStream() {
+        approvedDriversTask?.cancel()
+        approvedDriversTask = Task { [weak self] in
+            guard let self else { return }
+            let stream = await repository.approvedDriversDirectory()
+            for await drivers in stream {
+                await MainActor.run { self.approvedDrivers = drivers }
+            }
+        }
+    }
+
     func logout() {
         pendingDriversTask?.cancel()
         pendingDriversTask = nil
+        approvedDriversTask?.cancel()
+        approvedDriversTask = nil
         state.session = nil
         state.user = nil
         pendingDrivers = []
+        approvedDrivers = []
         keychain.remove(accessKey)
         keychain.remove(refreshKey)
         keychain.remove(userIdKey)
@@ -376,6 +409,24 @@ final class AuthService: ObservableObject {
         }
     }
 
+    /// Fires a background Task that re-fetches the user from Firestore after a short delay.
+    /// Handles the case where Firestore was slow at sign-in time (timeout fallback) so the
+    /// correct hasCompletedOnboarding / role is applied once the network recovers.
+    private func scheduleFirestoreRefresh() {
+        Task { [weak self] in
+            guard let self else { return }
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            guard let currentId = state.user?.id else { return }
+            if let freshUser = await repository.refreshCurrentUser(),
+               freshUser.id == currentId {
+                setUser(freshUser)
+                if let lang = freshUser.preferences.preferredLanguage {
+                    languageManager?.apply(lang)
+                }
+            }
+        }
+    }
+
     private func save(_ session: AuthSession) {
         state.session = session
         keychain.set(session.accessToken, for: accessKey)
@@ -402,6 +453,7 @@ final class AuthService: ObservableObject {
                 }
                 if user.role == .admin {
                     startPendingDriversStream()
+                    startApprovedDriversStream()
                 }
             }
         }
@@ -411,6 +463,7 @@ final class AuthService: ObservableObject {
         state.user = user
         if user.role == .admin {
             startPendingDriversStream()
+            startApprovedDriversStream()
         }
     }
 

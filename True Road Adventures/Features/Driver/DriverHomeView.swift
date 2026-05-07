@@ -10,6 +10,7 @@ final class DriverHomeViewModel: ObservableObject {
     @Published var isLoading: Bool = false
 
     private(set) var seenRideIds: Set<String> = []
+    private var locationTask: Task<Void, Never>?
 
     private let container: AppContainer
     let currentUser: User
@@ -54,9 +55,14 @@ final class DriverHomeViewModel: ObservableObject {
         guard let ride = rideService.activeRide else { return }
         let latLng = LatLng(latitude: location.coordinate.latitude,
                             longitude: location.coordinate.longitude)
-        Task {
+        // Only send a valid course; CLLocation.course == -1 when unavailable.
+        let bearing: Double? = location.course >= 0 ? location.course : nil
+        // Cancel the previous upload task so GPS bursts don't flood Firestore
+        // with concurrent writes that can arrive out of order.
+        locationTask?.cancel()
+        locationTask = Task {
             try? await rideService.updateDriverLocation(ride.id, location: latLng,
-                                                        bearing: location.course)
+                                                        bearing: bearing)
         }
     }
 
@@ -85,11 +91,13 @@ struct DriverHomeView: View {
     @EnvironmentObject private var locationService: LocationService
     @EnvironmentObject private var rideService: RideService
     @EnvironmentObject private var networkMonitor: NetworkMonitor
+    @EnvironmentObject private var pushNavigationStore: PushNavigationStore
 
     @State private var selectedRide: Ride?
     @State private var incomingRide: Ride?
     @State private var showActiveRide = false
     @State private var capturedActiveRide: Ride?
+    @State private var pendingPresentChatForActiveRide = false
 
     var body: some View {
         NavigationStack {
@@ -149,9 +157,6 @@ struct DriverHomeView: View {
                 showActiveRide = true
             }
         }
-        .onChange(of: showActiveRide) { _, isShown in
-            if !isShown { capturedActiveRide = nil }
-        }
         .onChange(of: viewModel.isOnline) { _, isOnline in
             guard isOnline else { return }
             checkForIncomingRide(rides: rideService.availableRides)
@@ -159,8 +164,11 @@ struct DriverHomeView: View {
         .onChange(of: rideService.availableRides) { _, rides in
             checkForIncomingRide(rides: rides)
         }
-        .onReceive(NotificationCenter.default.publisher(for: .TRAOpenRide)) { _ in
-            if rideService.activeRide != nil { showActiveRide = true }
+        .onAppear {
+            handlePushIntent(pushNavigationStore.pending)
+        }
+        .onChange(of: pushNavigationStore.pending) { _, intent in
+            handlePushIntent(intent)
         }
         .fullScreenCover(item: $incomingRide) { ride in
             DriverIncomingRideSheet(
@@ -172,6 +180,7 @@ struct DriverHomeView: View {
                 },
                 onDecline: {
                     viewModel.markRideSeen(ride.id)
+                    pendingPresentChatForActiveRide = false
                     incomingRide = nil
                 }
             )
@@ -179,9 +188,15 @@ struct DriverHomeView: View {
             .environmentObject(rideService)
             .environmentObject(networkMonitor)
         }
-        .fullScreenCover(isPresented: $showActiveRide) {
+        .fullScreenCover(isPresented: $showActiveRide, onDismiss: {
+            capturedActiveRide = nil
+            pendingPresentChatForActiveRide = false
+        }) {
             if let ride = capturedActiveRide {
-                DriverActiveRideView(ride: ride)
+                DriverActiveRideView(
+                    ride: ride,
+                    presentChatOnAppear: pendingPresentChatForActiveRide
+                )
                     .environmentObject(authService)
                     .environmentObject(rideService)
                     .environmentObject(locationService)
@@ -341,6 +356,40 @@ struct DriverHomeView: View {
             incomingRide = newRide
         }
     }
+
+    // MARK: Push deep-link
+    private func handlePushIntent(_ intent: PushNotificationIntent?) {
+        guard let intent else { return }
+        guard let rideId = intent.rideId else {
+            pushNavigationStore.clearPending()
+            return
+        }
+        pendingPresentChatForActiveRide = (intent.screen == .chat)
+        pushNavigationStore.clearPending()
+
+        // Already in an active ride for this rideId — show active ride screen.
+        if let activeRide = rideService.activeRide, activeRide.id == rideId {
+            capturedActiveRide = activeRide
+            showActiveRide = true
+            return
+        }
+
+        // Ride is waiting in the available queue — show incoming sheet directly,
+        // bypassing seenRideIds so the notification always opens the correct ride.
+        if let ride = rideService.availableRides.first(where: { $0.id == rideId }) {
+            incomingRide = ride
+            return
+        }
+
+        // Race: ride not yet loaded — subscribe until it arrives.
+        Task {
+            for await ride in rideService.subscribeToRide(rideId) {
+                guard let ride else { break }
+                incomingRide = ride
+                break
+            }
+        }
+    }
 }
 
 // MARK: - Available Ride Card
@@ -444,4 +493,5 @@ struct AvailableRideCard: View {
         )
     )
     .environmentObject(NetworkMonitor.preview)
+    .environmentObject(PushNavigationStore())
 }

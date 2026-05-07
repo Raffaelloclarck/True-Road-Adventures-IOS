@@ -47,6 +47,22 @@
         { "fieldPath": "role",     "order": "ASCENDING" },
         { "fieldPath": "isOnline", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isDriver", "order": "ASCENDING" },
+        { "fieldPath": "isOnline", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isDriver",       "order": "ASCENDING" },
+        { "fieldPath": "availabilityEnabled", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

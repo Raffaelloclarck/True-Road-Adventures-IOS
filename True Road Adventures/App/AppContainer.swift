@@ -8,6 +8,7 @@ final class AppContainer {
     let authRepository: AuthRepository
     let authService: AuthService
     let pushService: PushService
+    let pushNavigationStore: PushNavigationStore
     let locationService: LocationService
     let paymentService: PaymentService
     let rideRepository: RideRepository
@@ -15,6 +16,7 @@ final class AppContainer {
     let navigationManager: NavigationSessionManager
     let directionsClient: DirectionsClient
     let languageManager: LanguageManager
+    let discountCodeService: DiscountCodeService
 
     private var cancellables = Set<AnyCancellable>()
 
@@ -25,7 +27,8 @@ final class AppContainer {
         self.languageManager = LanguageManager()
         self.authRepository = FirebaseAuthRepository(appMode: appMode)
         self.authService = AuthService(repository: authRepository, languageManager: languageManager)
-        self.pushService = PushService(uploadURL: config.pushUploadURL)
+        self.pushService = PushService(appMode: appMode, uploadURL: config.pushUploadURL)
+        self.pushNavigationStore = PushNavigationStore()
         self.locationService = LocationService()
         self.paymentService = PaymentService(config: config)
         self.directionsClient = DirectionsClient(apiKey: config.googleDirectionsApiKey)
@@ -43,6 +46,7 @@ final class AppContainer {
             networkMonitor: networkMonitor,
             analytics: analytics
         )
+        self.discountCodeService = DiscountCodeService()
 
         pushService.onTokenRegistered = { token in
             print("Registered push token: \(token)")

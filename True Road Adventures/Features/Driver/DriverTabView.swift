@@ -4,6 +4,7 @@ struct DriverTabView: View {
     let container: AppContainer
     let currentUser: User
 
+    @EnvironmentObject private var pushNavigationStore: PushNavigationStore
     @State private var selectedTab: DriverTab = .home
 
     var body: some View {
@@ -27,7 +28,8 @@ struct DriverTabView: View {
         }
         .tint(AppColors.boltGreen)
         .onAppear { applyTabBarAppearance() }
-        .onReceive(NotificationCenter.default.publisher(for: .TRAOpenRide)) { _ in
+        .onChange(of: pushNavigationStore.pending) { _, intent in
+            guard intent != nil else { return }
             withAnimation(.spring(response: 0.35)) { selectedTab = .home }
         }
     }

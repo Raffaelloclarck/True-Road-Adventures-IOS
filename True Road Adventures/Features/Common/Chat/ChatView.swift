@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 #if canImport(FirebaseFirestore)
 import FirebaseFirestore
 import FirebaseAuth
@@ -15,13 +16,27 @@ struct ChatMessage: Identifiable, Equatable {
 struct ChatView: View {
     let rideId: String
     @EnvironmentObject private var authService: AuthService
+    @EnvironmentObject private var rideService: RideService
     @Environment(\.dismiss) private var dismiss
     @State private var messageText = ""
     @State private var messages: [ChatMessage] = []
     @State private var listenerHandle: Any?
+    @State private var rideSnapshot: Ride?
+    @State private var isPlacingCall = false
+    @State private var showCounterpartNoPhoneAlert = false
 
     private var currentUserId: String {
         authService.state.user?.id ?? ""
+    }
+
+    /// Resolved ride for `rideId` (active trip, else first snapshot from the ride document stream).
+    private var rideForCall: Ride? {
+        rideSnapshot
+    }
+
+    private var canOfferCall: Bool {
+        guard let ride = rideForCall else { return false }
+        return counterpartUserId(for: ride) != nil
     }
 
     var body: some View {
@@ -33,8 +48,15 @@ struct ChatView: View {
         .background(AppColors.backgroundLight)
         .navigationBarHidden(true)
         .ignoresSafeArea(edges: .bottom)
-        .task { await startListening() }
+        .task(id: rideId) {
+            async let listen: Void = startListening()
+            async let resolve: Void = resolveRideSnapshot()
+            _ = await (listen, resolve)
+        }
         .onDisappear { stopListening() }
+        .alert("chat.counterpart_no_phone", isPresented: $showCounterpartNoPhoneAlert) {
+            Button(String(localized: "action.ok"), role: .cancel) {}
+        }
     }
 
     private var topBar: some View {
@@ -53,21 +75,22 @@ struct ChatView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("chat.title").font(AppFont.titleSmall()).foregroundStyle(AppColors.gray900)
-                Text("chat.ride_prefix \(rideId.prefix(8))").font(AppFont.labelSmall()).foregroundStyle(AppColors.gray500)
+                Text(String(format: String(localized: "chat.ride_prefix"), String(rideId.prefix(8))))
+                    .font(AppFont.labelSmall())
+                    .foregroundStyle(AppColors.gray500)
             }
 
             Spacer()
 
             Button {
-                if let url = URL(string: "tel://112") {
-                    UIApplication.shared.open(url)
-                }
+                Task { await placeCallToCounterpart() }
             } label: {
                 Image(systemName: "phone.fill")
                     .font(.system(size: 18))
-                    .foregroundStyle(AppColors.boltGreen)
+                    .foregroundStyle((!canOfferCall || isPlacingCall) ? AppColors.gray300 : AppColors.boltGreen)
             }
             .buttonStyle(.plain)
+            .disabled(!canOfferCall || isPlacingCall)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -96,15 +119,16 @@ struct ChatView: View {
     }
 
     private func messageBubble(_ message: ChatMessage) -> some View {
-        HStack {
-            if message.isOwn { Spacer(minLength: 60) }
-            VStack(alignment: message.isOwn ? .trailing : .leading, spacing: 4) {
+        let own = message.senderId == currentUserId
+        return HStack {
+            if own { Spacer(minLength: 60) }
+            VStack(alignment: own ? .trailing : .leading, spacing: 4) {
                 Text(message.text)
                     .font(AppFont.bodyMedium())
-                    .foregroundStyle(message.isOwn ? .white : AppColors.gray900)
+                    .foregroundStyle(own ? .white : AppColors.gray900)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
-                    .background(message.isOwn ? AppColors.boltGreenDeep : Color(hex: 0xE5E7EB))
+                    .background(own ? AppColors.boltGreenDeep : Color(hex: 0xE5E7EB))
                     .clipShape(RoundedRectangle(cornerRadius: 18))
 
                 Text(message.timestamp.formatted(.dateTime.hour().minute()))
@@ -112,7 +136,7 @@ struct ChatView: View {
                     .foregroundStyle(AppColors.gray500)
                     .padding(.horizontal, 4)
             }
-            if !message.isOwn { Spacer(minLength: 60) }
+            if !own { Spacer(minLength: 60) }
         }
     }
 
@@ -145,6 +169,79 @@ struct ChatView: View {
         .padding(.bottom, 30)
         .background(Color.white)
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: -2)
+    }
+
+    // MARK: - Call counterpart
+
+    private func counterpartUserId(for ride: Ride) -> String? {
+        let me = currentUserId
+        guard !me.isEmpty else { return nil }
+        if me == ride.customerId { return ride.driverId }
+        if me == ride.driverId { return ride.customerId }
+        return nil
+    }
+
+    private func sanitizedPhoneDigits(_ raw: String) -> String {
+        raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            .filter { $0.isNumber || $0 == "+" }
+    }
+
+    @MainActor
+    private func resolveRideSnapshot() async {
+        if rideService.activeRide?.id == rideId {
+            rideSnapshot = rideService.activeRide
+            return
+        }
+
+        let lock = NSLock()
+        var completed = false
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            func finishOnce() {
+                lock.lock()
+                defer { lock.unlock() }
+                guard !completed else { return }
+                completed = true
+                continuation.resume()
+            }
+
+            let listen = Task { @MainActor in
+                for await ride in rideService.subscribeToRide(rideId) {
+                    if Task.isCancelled { break }
+                    if let ride {
+                        rideSnapshot = ride
+                        finishOnce()
+                        return
+                    }
+                }
+                finishOnce()
+            }
+
+            Task {
+                try? await Task.sleep(for: .seconds(10))
+                listen.cancel()
+                finishOnce()
+            }
+        }
+    }
+
+    @MainActor
+    private func placeCallToCounterpart() async {
+        guard let ride = rideForCall, let counterpartId = counterpartUserId(for: ride) else { return }
+        isPlacingCall = true
+        defer { isPlacingCall = false }
+
+        guard let user = await authService.getUserById(counterpartId) else { return }
+        let raw = user.phoneNumber ?? ""
+        let sanitized = sanitizedPhoneDigits(raw)
+        guard !sanitized.isEmpty, let url = URL(string: "tel://\(sanitized)") else {
+            showCounterpartNoPhoneAlert = true
+            return
+        }
+        guard UIApplication.shared.canOpenURL(url) else {
+            showCounterpartNoPhoneAlert = true
+            return
+        }
+        await UIApplication.shared.open(url)
     }
 
     // MARK: - Firestore
@@ -187,6 +284,7 @@ struct ChatView: View {
     private func sendMessage() async {
         let text = messageText.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else { return }
+        guard !currentUserId.isEmpty else { return }
         messageText = ""
 
         #if canImport(FirebaseFirestore)
@@ -213,4 +311,10 @@ struct ChatView: View {
 #Preview {
     ChatView(rideId: "demo-ride")
         .environmentObject(AuthService(repository: InMemoryAuthRepository()))
+        .environmentObject(
+            RideService(
+                repository: InMemoryRideRepository(),
+                navigationManager: NavigationSessionManager(directionsClient: DirectionsClient(apiKey: nil))
+            )
+        )
 }

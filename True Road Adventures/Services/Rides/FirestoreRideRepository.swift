@@ -24,7 +24,9 @@ final class FirestoreRideRepository: RideRepository {
         pickupAddress: String?,
         destinationAddress: String?,
         tier: RideTier,
-        estimatedFare: Double
+        estimatedFare: Double,
+        appliedDiscountCode: String?,
+        discountAmount: Double?
     ) async throws -> Ride {
         let ref = collection.document()
         let now = msNow()
@@ -47,9 +49,11 @@ final class FirestoreRideRepository: RideRepository {
             "totalFareRealtime": estimatedFare,
             "tier":              tier.rawValue,
         ]
-        if let address = pickupAddress      { data["pickupAddress"]      = address }
-        if let address = destinationAddress { data["destinationAddress"] = address }
-        if let scheduled = scheduledAt      { data["scheduledAt"]        = msFrom(scheduled) }
+        if let address = pickupAddress        { data["pickupAddress"]       = address }
+        if let address = destinationAddress   { data["destinationAddress"]  = address }
+        if let scheduled = scheduledAt        { data["scheduledAt"]         = msFrom(scheduled) }
+        if let code = appliedDiscountCode     { data["appliedDiscountCode"] = code }
+        if let amount = discountAmount, amount > 0 { data["discountAmount"] = amount }
 
         try await ref.setData(data)
 
@@ -63,7 +67,9 @@ final class FirestoreRideRepository: RideRepository {
             destinationAddress: destinationAddress,
             scheduledAt: scheduledAt,
             totalFareRealtime: estimatedFare,
-            tier: tier
+            tier: tier,
+            appliedDiscountCode: appliedDiscountCode,
+            discountAmount: discountAmount
         )
     }
 
@@ -313,7 +319,7 @@ private func rideFromDocument(id: String, data: [String: Any]) -> Ride? {
         price:                       data["price"] as? Double,
         paymentStatus:               payment,
         driverLocation:              latLngFrom(data["driverLocation"]),
-        driverBearing:               (data["driverBearing"] as? NSNumber)?.doubleValue,
+        driverBearing:               (data["driverBearing"] as? Double) ?? (data["driverBearing"] as? NSNumber)?.doubleValue,
         customerLocation:            latLngFrom(data["customerLocation"]),
         customerLocationUpdatedAt:   dateFromOpt(ms: data["customerLocationUpdatedAt"]),
         etaToPickupSeconds:          (data["etaToPickupSeconds"] as? NSNumber)?.intValue,
@@ -330,6 +336,8 @@ private func rideFromDocument(id: String, data: [String: Any]) -> Ride? {
         perMinWait:                  (data["perMinWait"] as? NSNumber)?.doubleValue ?? FareCalculator.perMinWait,
         totalFareRealtime:           (data["totalFareRealtime"] as? NSNumber)?.doubleValue ?? FareCalculator.startFare,
         totalFareFinal:              (data["totalFareFinal"] as? NSNumber)?.doubleValue,
-        tier:                        tier
+        tier:                        tier,
+        appliedDiscountCode:         data["appliedDiscountCode"] as? String,
+        discountAmount:              (data["discountAmount"] as? NSNumber)?.doubleValue
     )
 }

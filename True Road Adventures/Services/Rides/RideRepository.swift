@@ -10,7 +10,9 @@ protocol RideRepository {
         pickupAddress: String?,
         destinationAddress: String?,
         tier: RideTier,
-        estimatedFare: Double
+        estimatedFare: Double,
+        appliedDiscountCode: String?,
+        discountAmount: Double?
     ) async throws -> Ride
 
     func ridesForCustomer(_ customerId: String) -> AsyncStream<[Ride]>
@@ -30,6 +32,13 @@ protocol RideRepository {
     func submitRating(_ rating: Rating) async throws
 }
 
+enum RideCancelError: LocalizedError {
+    case notCancellable
+    var errorDescription: String? {
+        String(localized: "ride.cancel.error.driver_accepted")
+    }
+}
+
 @MainActor
 final class InMemoryRideRepository: RideRepository {
     private var rides: [String: Ride] = [:]
@@ -38,6 +47,38 @@ final class InMemoryRideRepository: RideRepository {
     private var allRidesStreams: [AsyncStream<[Ride]>.Continuation] = []
     private var customerStreams: [String: AsyncStream<[Ride]>.Continuation] = [:]
     private var driverStreams: [String: AsyncStream<[Ride]>.Continuation] = [:]
+    private var expiryTask: Task<Void, Never>?
+
+    static let requestExpirySeconds: TimeInterval = 10 * 60
+
+    init() {
+        startExpiryLoop()
+    }
+
+    private func startExpiryLoop() {
+        expiryTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(30))
+                guard let self, !Task.isCancelled else { return }
+                self.expireStaleRides()
+            }
+        }
+    }
+
+    private func expireStaleRides() {
+        let cutoff = Date.now.addingTimeInterval(-Self.requestExpirySeconds)
+        let expired = rides.values.filter {
+            $0.status == .searching &&
+            $0.scheduledAt == nil &&
+            $0.createdAt < cutoff
+        }
+        for var ride in expired {
+            ride.status = .cancelled
+            ride.updatedAt = .now
+            rides[ride.id] = ride
+            broadcast(ride)
+        }
+    }
 
     func createRide(
         customerId: String,
@@ -47,7 +88,9 @@ final class InMemoryRideRepository: RideRepository {
         pickupAddress: String?,
         destinationAddress: String?,
         tier: RideTier,
-        estimatedFare: Double
+        estimatedFare: Double,
+        appliedDiscountCode: String?,
+        discountAmount: Double?
     ) async throws -> Ride {
         var ride = Ride(
             customerId: customerId,
@@ -57,7 +100,9 @@ final class InMemoryRideRepository: RideRepository {
             destinationAddress: destinationAddress,
             scheduledAt: scheduledAt,
             totalFareRealtime: estimatedFare,
-            tier: tier
+            tier: tier,
+            appliedDiscountCode: appliedDiscountCode,
+            discountAmount: discountAmount
         )
         ride.status = .searching
         rides[ride.id] = ride
@@ -131,6 +176,9 @@ final class InMemoryRideRepository: RideRepository {
 
     func updateRideStatus(_ rideId: String, status: RideStatus) async throws {
         guard var ride = rides[rideId] else { return }
+        if status == .cancelled && ride.status != .searching {
+            throw RideCancelError.notCancellable
+        }
         ride.status = status
         ride.updatedAt = .now
         if status == .completed {
@@ -236,7 +284,9 @@ final class ApiRideRepository: RideRepository {
         pickupAddress: String?,
         destinationAddress: String?,
         tier: RideTier,
-        estimatedFare: Double
+        estimatedFare: Double,
+        appliedDiscountCode: String?,
+        discountAmount: Double?
     ) async throws -> Ride {
         let request = ApiRequest(
             path: "/rides",
@@ -249,7 +299,9 @@ final class ApiRideRepository: RideRepository {
                 pickupAddress: pickupAddress,
                 destinationAddress: destinationAddress,
                 tier: tier.rawValue,
-                estimatedFare: estimatedFare
+                estimatedFare: estimatedFare,
+                appliedDiscountCode: appliedDiscountCode,
+                discountAmount: discountAmount
             )
         )
         return try await send(request)
@@ -390,6 +442,8 @@ final class ApiRideRepository: RideRepository {
         let destinationAddress: String?
         let tier: String
         let estimatedFare: Double
+        let appliedDiscountCode: String?
+        let discountAmount: Double?
     }
 
     private struct DriverLocationBody: Encodable {

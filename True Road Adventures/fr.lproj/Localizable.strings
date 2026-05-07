@@ -95,9 +95,6 @@
 "rider.home.saved.work" = "Travail";
 "rider.home.saved.work.empty" = "Ajoute ton adresse travail";
 "rider.home.service.standard" = "Standard";
-"rider.home.service.comfort" = "Confort";
-"rider.home.service.xl" = "XL";
-"rider.home.service.green" = "Vert";
 "rider.home.active_ride" = "Trajet en cours";
 "rider.home.destination" = "Destination";
 "rider.home.eta" = "ETA : %@ min";
@@ -316,6 +313,7 @@
 "chat.title" = "Chat";
 "chat.ride_prefix" = "Trajet #%@";
 "chat.message.placeholder" = "Message...";
+"chat.counterpart_no_phone" = "Aucun numéro n’est disponible pour cette personne, ou les appels ne sont pas possibles sur cet appareil.";
 
 /* ===== SUPPORT ===== */
 "support.title" = "Aide & Support";
@@ -526,6 +524,7 @@
 "action.share" = "Partager";
 "action.cancel_short" = "Annuler";
 "action.chat" = "Chat";
+"action.ok" = "OK";
 
 /* ===== ROUTE LABELS ===== */
 "route.pickup" = "Prise en charge";
@@ -556,6 +555,8 @@
 "ride.cancel.message" = "Es-tu sûr(e) de vouloir annuler ce trajet ?";
 "ride.cancel.confirm" = "Annuler";
 "ride.cancel.back" = "Retour";
+"ride.cancel.error.title" = "Annulation impossible";
+"ride.cancel.error.driver_accepted" = "Ce trajet ne peut plus être annulé car un chauffeur l'a déjà accepté.";
 "ride.rate.button" = "Évaluer le trajet";
 "ride.rate.submitted" = "Évaluation soumise";
 "ride.rate.how_was_ride" = "Comment s'est passé ton trajet ?";
@@ -577,7 +578,7 @@
 "active.ride.waiting" = "Attente : %@";
 "active.ride.wait_rate" = "SRD 3.33/min d'attente";
 "active.ride.stop_wait" = "Arrêter l'attente";
-"active.ride.start_wait" = "Attendre";
+"active.ride.start_wait" = "Démarrer attente";
 "active.ride.arrived_customer" = "Je suis chez le client";
 "active.ride.passenger_picked_up" = "Passager embarqué";
 "active.ride.complete_ride" = "Terminer le trajet";
@@ -626,9 +627,6 @@
 "home.active_ride" = "Trajet actif";
 "home.eta" = "ETA : %d min";
 "home.service.standard" = "Standard";
-"home.service.comfort" = "Confort";
-"home.service.xl" = "XL";
-"home.service.green" = "Vert";
 
 /* ===== DRIVER HOME ===== */
 "driver.home.online" = "En ligne";
@@ -654,9 +652,24 @@
 "driver.pending.title" = "Compte en cours d'examen";
 "driver.pending.body" = "Votre demande est examinée par un administrateur. Vous serez informé dès que votre compte sera approuvé.";
 
+/* ===== CODES DE RÉDUCTION ===== */
+"discount.code.title" = "Code de réduction";
+"discount.code.placeholder" = "Entrer le code (ex. ETE20)";
+"discount.code.apply" = "Appliquer";
+"discount.code.applied" = "Code %@ appliqué";
+"discount.code.invalid" = "Ce code de réduction n'est pas valide.";
+"discount.code.expired" = "Ce code de réduction a expiré.";
+"discount.code.max_uses_reached" = "Ce code de réduction a atteint son nombre maximal d'utilisations.";
+"discount.code.already_used" = "Tu as déjà utilisé ce code de réduction.";
+"discount.code.min_fare" = "Ce code de réduction nécessite un tarif minimum plus élevé.";
+"discount.code.profile.subtitle" = "Échanger un code contre des crédits de trajet";
+"discount.code.credits_added" = "SRD %.0f ont été ajoutés à tes crédits de trajet.";
+
 /* ===== ADMIN ===== */
 "admin.tab.rides" = "Trajets";
 "admin.tab.drivers" = "Chauffeurs";
+"admin.tab.discounts" = "Réductions";
+"admin.tab.notifications" = "Notifications";
 "admin.tab.profile" = "Profil";
 "admin.rides.title" = "Tous les trajets";
 "admin.drivers.title" = "Chauffeurs";
@@ -666,5 +679,32 @@
 "admin.drivers.approve" = "Approuver";
 "admin.drivers.reject" = "Refuser";
 "admin.drivers.reject.confirm" = "Êtes-vous sûr de vouloir refuser ce chauffeur ? Cela supprimera son compte.";
+"admin.drivers.segment.pending" = "Approbations";
+"admin.drivers.segment.active" = "Chauffeurs actifs";
+"admin.drivers.active.empty" = "Aucun chauffeur approuvé";
+"admin.drivers.active.empty.body" = "Les chauffeurs approuvés apparaissent ici avec le statut en ligne et les plannings.";
+"admin.drivers.status.online" = "En ligne";
+"admin.drivers.status.offline" = "Hors ligne";
+"admin.drivers.availability.on" = "Planning activé";
+"admin.drivers.schedule.title" = "Planning hebdomadaire";
+"admin.drivers.schedule.disabled" = "Ce chauffeur n'a pas activé son planning de disponibilité.";
 "admin.profile.title" = "Profil";
 "active.ride.your_passenger" = "Votre passager";
+
+/* ===== PLANNING DE DISPONIBILITÉ DU CHAUFFEUR ===== */
+"driver.availability.title" = "Mon planning";
+"driver.availability.master_toggle" = "Activer le planning automatique";
+"driver.availability.master_subtitle" = "Passer en ligne/hors ligne automatiquement selon vos horaires";
+"driver.availability.schedule_header" = "Disponibilité hebdomadaire";
+"driver.availability.day.monday" = "Lundi";
+"driver.availability.day.tuesday" = "Mardi";
+"driver.availability.day.wednesday" = "Mercredi";
+"driver.availability.day.thursday" = "Jeudi";
+"driver.availability.day.friday" = "Vendredi";
+"driver.availability.day.saturday" = "Samedi";
+"driver.availability.day.sunday" = "Dimanche";
+"driver.availability.start" = "De";
+"driver.availability.end" = "À";
+"driver.availability.save" = "Enregistrer le planning";
+"driver.availability.saved" = "Planning enregistré";
+"driver.profile.row.availability" = "Mon planning";

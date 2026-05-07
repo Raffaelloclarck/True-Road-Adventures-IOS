@@ -8,6 +8,7 @@ struct RiderRideRequestView: View {
     @EnvironmentObject private var networkMonitor: NetworkMonitor
     @EnvironmentObject private var locationService: LocationService
     @EnvironmentObject private var authService: AuthService
+    @EnvironmentObject private var discountCodeService: DiscountCodeService
     @Environment(LanguageManager.self) private var languageManager: LanguageManager
     @Environment(\.dismiss) private var dismiss
 
@@ -15,19 +16,26 @@ struct RiderRideRequestView: View {
     @State private var destination = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @State private var selectedTier = 0
     @State private var isSchedulingEnabled: Bool
     @State private var scheduledDate: Date
 
     @State private var destinationSuggestions: [String] = []
     @State private var pickupSuggestions: [String] = []
     @State private var autocompleteTask: Task<Void, Never>?
+    @State private var suppressDestinationSuggestion = false
+    @State private var suppressPickupSuggestion = false
 
-    // Fare estimates per tier (nil = not yet fetched)
-    @State private var fareEstimates: [Double?] = [nil, nil, nil]
+    @State private var fareEstimate: Double?
     @State private var isFetchingEstimate = false
     @State private var estimateTask: Task<Void, Never>?
     @State private var cachedDestLatLng: LatLng?
+
+    // Discount code
+    @State private var discountCodeInput = ""
+    @State private var appliedDiscountCode: String?
+    @State private var appliedDiscountAmount: Double?
+    @State private var discountError: String?
+    @State private var isApplyingDiscount = false
 
     // Route preview on map
     @State private var previewRoutePoints: [Coordinate2D] = []
@@ -112,12 +120,12 @@ struct RiderRideRequestView: View {
                 VStack(spacing: 16) {
                     addressInputs
                     schedulingRow
-                    tierSelector
                     fareEstimateRow
+                    discountCodeRow
                     TRAPrimaryButton(
                         title: "ride.request.button",
                         isLoading: isLoading,
-                        isDisabled: !networkMonitor.isOnline || destination.isEmpty
+                        isDisabled: !networkMonitor.isOnline || destination.isEmpty || isLoading
                     ) {
                         submitRide()
                     }
@@ -127,6 +135,83 @@ struct RiderRideRequestView: View {
                 .padding(.top, 8)
             }
             .scrollDismissesKeyboard(.interactively)
+        }
+    }
+
+    // MARK: - Discount code row
+
+    private var discountCodeRow: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let appliedCode = appliedDiscountCode, let discount = appliedDiscountAmount {
+                HStack(spacing: 10) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(AppColors.boltGreen)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(String(format: String(localized: "discount.code.applied"), appliedCode))
+                            .font(AppFont.bodyMedium())
+                            .foregroundStyle(AppColors.boltGreen)
+                        Text(String(format: "− SRD %.0f korting", discount))
+                            .font(AppFont.labelSmall())
+                            .foregroundStyle(AppColors.boltGreen)
+                    }
+                    Spacer()
+                    Button {
+                        appliedDiscountCode = nil
+                        appliedDiscountAmount = nil
+                        discountCodeInput = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(AppColors.gray300)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(12)
+                .background(AppColors.boltGreenLight)
+                .clipShape(RoundedRectangle(cornerRadius: AppRadius.r12))
+            } else {
+                HStack(spacing: 8) {
+                    Image(systemName: "tag")
+                        .foregroundStyle(AppColors.gray500)
+                        .frame(width: 20)
+                    TextField(String(localized: "discount.code.placeholder"), text: $discountCodeInput)
+                        .font(AppFont.bodyMedium())
+                        .textInputAutocapitalization(.characters)
+                        .autocorrectionDisabled()
+                        .onChange(of: discountCodeInput) { _, new in
+                            discountCodeInput = new.uppercased()
+                            if discountError != nil { discountError = nil }
+                        }
+                    Button {
+                        Task { await applyDiscountCode() }
+                    } label: {
+                        if isApplyingDiscount {
+                            ProgressView()
+                                .scaleEffect(0.75)
+                                .tint(AppColors.boltGreen)
+                        } else {
+                            Text("discount.code.apply")
+                                .font(AppFont.labelMedium())
+                                .foregroundStyle(
+                                    discountCodeInput.isEmpty
+                                        ? AppColors.gray300
+                                        : AppColors.boltGreen
+                                )
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(discountCodeInput.isEmpty || isApplyingDiscount)
+                }
+                .padding(12)
+                .background(AppColors.backgroundCard)
+                .clipShape(RoundedRectangle(cornerRadius: AppRadius.r12))
+
+                if let err = discountError {
+                    Text(localizedDiscountError(err))
+                        .font(AppFont.labelSmall())
+                        .foregroundStyle(AppColors.errorRed)
+                        .padding(.horizontal, 4)
+                }
+            }
         }
     }
 
@@ -146,6 +231,8 @@ struct RiderRideRequestView: View {
             }
             if !pickupSuggestions.isEmpty {
                 suggestionList(suggestions: pickupSuggestions) { selected in
+                    suppressPickupSuggestion = true
+                    autocompleteTask?.cancel()
                     pickup = selected
                     pickupSuggestions = []
                     triggerFareEstimate()
@@ -160,6 +247,8 @@ struct RiderRideRequestView: View {
             }
             if !destinationSuggestions.isEmpty {
                 suggestionList(suggestions: destinationSuggestions) { selected in
+                    suppressDestinationSuggestion = true
+                    autocompleteTask?.cancel()
                     destination = selected
                     destinationSuggestions = []
                     triggerFareEstimate()
@@ -169,9 +258,13 @@ struct RiderRideRequestView: View {
             }
         }
         .onChange(of: destination) { _, newValue in
-            fetchSuggestions(query: newValue, isPickup: false)
+            if suppressDestinationSuggestion {
+                suppressDestinationSuggestion = false
+            } else {
+                fetchSuggestions(query: newValue, isPickup: false)
+            }
             if newValue.isEmpty {
-                fareEstimates = [nil, nil, nil]
+                fareEstimate = nil
                 previewRoutePoints = []
                 cachedDestLatLng = nil
                 estimateTask?.cancel()
@@ -180,7 +273,11 @@ struct RiderRideRequestView: View {
             }
         }
         .onChange(of: pickup) { _, newValue in
-            fetchSuggestions(query: newValue, isPickup: true)
+            if suppressPickupSuggestion {
+                suppressPickupSuggestion = false
+            } else {
+                fetchSuggestions(query: newValue, isPickup: true)
+            }
         }
     }
 
@@ -213,51 +310,6 @@ struct RiderRideRequestView: View {
         }
     }
 
-    // MARK: - Tier selector
-
-    private var tierSelector: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-                ForEach(Array(RideTier.allCases.enumerated()), id: \.offset) { index, tier in
-                    Button {
-                        selectedTier = index
-                    } label: {
-                        VStack(spacing: 6) {
-                            Image(systemName: tier.icon)
-                                .font(.system(size: 22))
-                                .foregroundStyle(selectedTier == index ? .white : AppColors.boltGreen)
-                            Text(tier.displayName)
-                                .font(AppFont.labelSmall())
-                                .foregroundStyle(selectedTier == index ? .white : AppColors.gray700)
-                            tierPriceLabel(index: index, isSelected: selectedTier == index)
-                        }
-                        .frame(width: 90, height: 80)
-                        .background(selectedTier == index ? AppColors.boltGreen : AppColors.backgroundCard)
-                        .clipShape(RoundedRectangle(cornerRadius: AppRadius.r16))
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func tierPriceLabel(index: Int, isSelected: Bool) -> some View {
-        if let fare = fareEstimates[safe: index] ?? nil {
-            Text(String(format: "SRD %.0f", fare))
-                .font(AppFont.labelSmall())
-                .foregroundStyle(isSelected ? .white.opacity(0.9) : AppColors.boltGreen)
-        } else if isFetchingEstimate {
-            ProgressView()
-                .scaleEffect(0.6)
-                .tint(isSelected ? .white : AppColors.boltGreen)
-        } else {
-            Text("–")
-                .font(AppFont.labelSmall())
-                .foregroundStyle(isSelected ? .white.opacity(0.5) : AppColors.gray500)
-        }
-    }
-
     private var userCredits: Double { authService.state.user?.rideCredits ?? 0 }
 
     // MARK: - Fare estimate row
@@ -267,19 +319,31 @@ struct RiderRideRequestView: View {
             Image(systemName: "info.circle")
                 .foregroundStyle(AppColors.boltGreen)
             VStack(alignment: .leading, spacing: 2) {
-                if let fare = fareEstimates[safe: selectedTier] ?? nil {
-                    if userCredits > 0 {
-                        let (finalFare, applied) = FareCalculator.applyCredits(to: fare, credits: userCredits)
+                if let fare = fareEstimate {
+                    let fareAfterDiscount = max(fare - (appliedDiscountAmount ?? 0), 0)
+                    if appliedDiscountAmount != nil || userCredits > 0 {
                         Text(String(format: String(localized: "ride.request.fare_estimate"), fare))
                             .font(AppFont.bodyMedium())
                             .foregroundStyle(AppColors.gray500)
                             .strikethrough()
-                        Text(String(format: "SRD %.0f na korting", finalFare))
-                            .font(AppFont.bodyMedium())
-                            .foregroundStyle(AppColors.boltGreen)
-                        Text(String(format: "− SRD %.2f tegoed verrekend", applied))
-                            .font(AppFont.labelSmall())
-                            .foregroundStyle(AppColors.boltGreen)
+                        if let discount = appliedDiscountAmount {
+                            Text(String(format: "− SRD %.0f kortingscode", discount))
+                                .font(AppFont.labelSmall())
+                                .foregroundStyle(AppColors.boltGreen)
+                        }
+                        if userCredits > 0 {
+                            let (finalFare, applied) = FareCalculator.applyCredits(to: fareAfterDiscount, credits: userCredits)
+                            Text(String(format: "SRD %.0f na korting", finalFare))
+                                .font(AppFont.bodyMedium())
+                                .foregroundStyle(AppColors.boltGreen)
+                            Text(String(format: "− SRD %.2f tegoed verrekend", applied))
+                                .font(AppFont.labelSmall())
+                                .foregroundStyle(AppColors.boltGreen)
+                        } else {
+                            Text(String(format: "SRD %.0f te betalen", fareAfterDiscount))
+                                .font(AppFont.bodyMedium())
+                                .foregroundStyle(AppColors.boltGreen)
+                        }
                     } else {
                         Text(String(format: String(localized: "ride.request.fare_estimate"), fare))
                             .font(AppFont.bodyMedium())
@@ -373,7 +437,7 @@ struct RiderRideRequestView: View {
     private func triggerFareEstimate() {
         estimateTask?.cancel()
         guard !destination.isEmpty else {
-            fareEstimates = [nil, nil, nil]
+            fareEstimate = nil
             return
         }
         estimateTask = Task { @MainActor in
@@ -411,14 +475,11 @@ struct RiderRideRequestView: View {
                 durationSeconds = Int(distanceKm / 30.0 * 3600)
             }
 
-            fareEstimates = RideTier.allCases.map { tier in
-                FareCalculator.realtimeFare(
-                    distanceKm: distanceKm,
-                    rideSeconds: durationSeconds,
-                    waitSeconds: 0,
-                    tier: tier
-                )
-            }
+            fareEstimate = FareCalculator.realtimeFare(
+                distanceKm: distanceKm,
+                rideSeconds: durationSeconds,
+                waitSeconds: 0
+            )
         }
     }
 
@@ -477,24 +538,78 @@ struct RiderRideRequestView: View {
         }
     }
 
+    // MARK: - Discount code apply
+
+    private func applyDiscountCode() async {
+        guard !discountCodeInput.isEmpty else { return }
+        isApplyingDiscount = true
+        discountError = nil
+        defer { isApplyingDiscount = false }
+
+        let rawFare: Double
+        if let fare = fareEstimate {
+            rawFare = fare
+        } else {
+            discountError = "discount.code.min_fare"
+            return
+        }
+
+        do {
+            let result = try await discountCodeService.previewDiscount(
+                discountCodeInput,
+                fare: rawFare
+            )
+            appliedDiscountCode = discountCodeInput
+            appliedDiscountAmount = result.discountAmount
+        } catch {
+            discountError = error.localizedDescription
+        }
+    }
+
+    private func localizedDiscountError(_ raw: String) -> String {
+        switch raw {
+        case "discount.code.invalid":          return String(localized: "discount.code.invalid")
+        case "discount.code.expired":          return String(localized: "discount.code.expired")
+        case "discount.code.max_uses_reached": return String(localized: "discount.code.max_uses_reached")
+        case "discount.code.already_used":     return String(localized: "discount.code.already_used")
+        case "discount.code.min_fare":         return String(localized: "discount.code.min_fare")
+        default: return raw
+        }
+    }
+
     // MARK: - Actions
 
     private func submitRide() {
-        guard !destination.isEmpty else { return }
+        guard !destination.isEmpty, !isLoading else { return }
         isLoading = true
         Task {
             let customerId = authService.state.user?.id ?? ""
-            let selectedRideTier = RideTier.allCases[selectedTier]
 
-            let rawFare: Double
-            if let fare = fareEstimates[safe: selectedTier] ?? nil {
-                rawFare = fare
-            } else {
-                rawFare = FareCalculator.realtimeFare(
-                    distanceKm: 0, rideSeconds: 0, waitSeconds: 0, tier: selectedRideTier
-                )
+            let rawFare: Double = fareEstimate ?? FareCalculator.realtimeFare(
+                distanceKm: 0, rideSeconds: 0, waitSeconds: 0
+            )
+
+            // Burn the code at submit time (was only previewed on Apply).
+            if let code = appliedDiscountCode {
+                do {
+                    let confirmed = try await discountCodeService.redeemCode(code, context: .ride, fare: rawFare)
+                    await MainActor.run { appliedDiscountAmount = confirmed.discountAmount }
+                } catch {
+                    await MainActor.run {
+                        isLoading = false
+                        discountError = error.localizedDescription
+                        appliedDiscountCode = nil
+                        appliedDiscountAmount = nil
+                    }
+                    return
+                }
             }
-            let (estimatedFare, creditsToApply) = FareCalculator.applyCredits(to: rawFare, credits: userCredits)
+
+            let fareAfterDiscount = rawFare - (appliedDiscountAmount ?? 0)
+            let (estimatedFare, creditsToApply) = FareCalculator.applyCredits(
+                to: max(fareAfterDiscount, 0),
+                credits: userCredits
+            )
 
             let pickupLatLng: LatLng
             if let loc = locationService.lastLocation {
@@ -520,8 +635,10 @@ struct RiderRideRequestView: View {
                     pickupAddress: pickup.isEmpty ? String(localized: "ride.request.current_location") : pickup,
                     destinationAddress: destination,
                     scheduledAt: isSchedulingEnabled ? scheduledDate : nil,
-                    tier: selectedRideTier,
-                    estimatedFare: estimatedFare
+                    tier: .standard,
+                    estimatedFare: estimatedFare,
+                    appliedDiscountCode: appliedDiscountCode,
+                    discountAmount: appliedDiscountAmount
                 )
                 if creditsToApply > 0 {
                     await authService.applyRideCredits(creditsToApply)
@@ -622,13 +739,6 @@ struct RiderRideRequestView: View {
     }
 }
 
-// MARK: - Safe array subscript
-
-private extension Array {
-    subscript(safe index: Int) -> Element? {
-        indices.contains(index) ? self[index] : nil
-    }
-}
 
 #Preview {
     RiderRideRequestView(scheduledAt: nil)

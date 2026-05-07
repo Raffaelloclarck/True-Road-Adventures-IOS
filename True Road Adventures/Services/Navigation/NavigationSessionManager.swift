@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 
+@MainActor
 final class NavigationSessionManager: ObservableObject {
     struct Snapshot {
         let routePoints: [Coordinate2D]
@@ -11,6 +12,7 @@ final class NavigationSessionManager: ObservableObject {
         let distanceToNextTurnM: Int
         let etaSeconds: Int
         let distanceKm: Double
+        let distanceRemainingM: Int
         let snappedDriverLocation: LatLng?
 
         static var empty: Snapshot {
@@ -23,6 +25,7 @@ final class NavigationSessionManager: ObservableObject {
                 distanceToNextTurnM: 0,
                 etaSeconds: 0,
                 distanceKm: 0,
+                distanceRemainingM: 0,
                 snappedDriverLocation: nil
             )
         }
@@ -107,6 +110,7 @@ final class NavigationSessionManager: ObservableObject {
             distanceToNextTurnM: Int(haversineKm(origin, target) * 1000),
             etaSeconds: placeholderEta,
             distanceKm: haversineKm(origin, target),
+            distanceRemainingM: Int(haversineKm(origin, target) * 1000),
             snappedDriverLocation: nil
         )
         offRouteCounter = 0
@@ -152,6 +156,7 @@ final class NavigationSessionManager: ObservableObject {
                     distanceToNextTurnM: resolvedSteps.first?.distanceMeters ?? 0,
                     etaSeconds: etaSeconds,
                     distanceKm: distanceKm,
+                    distanceRemainingM: Int(distanceKm * 1000),
                     snappedDriverLocation: nil
                 )
                 self.offRouteCounter = 0
@@ -189,6 +194,7 @@ final class NavigationSessionManager: ObservableObject {
             }
         }
 
+        let remainingM = distanceRemaining(from: snappedPoint, steps: steps, stepIndex: stepIndex)
         let newSnapshot = Snapshot(
             routePoints: snapshot.routePoints,
             trafficSegments: snapshot.trafficSegments,
@@ -197,12 +203,13 @@ final class NavigationSessionManager: ObservableObject {
             currentStep: steps[safe: stepIndex],
             distanceToNextTurnM: distanceToNextTurn,
             etaSeconds: computeEtaSeconds(
-                remainingMeters: distanceRemaining(from: snappedPoint, steps: steps, stepIndex: stepIndex),
+                remainingMeters: remainingM,
                 speedKmh: update.speedKmh,
                 trafficSegments: snapshot.trafficSegments,
                 snappedPosition: snappedPoint
             ),
             distanceKm: snapshot.distanceKm,
+            distanceRemainingM: remainingM,
             snappedDriverLocation: snappedPoint
         )
         snapshot = newSnapshot
@@ -233,6 +240,7 @@ final class NavigationSessionManager: ObservableObject {
                             distanceToNextTurnM: res.steps.first?.distanceMeters ?? 0,
                             etaSeconds: res.totalDurationSeconds,
                             distanceKm: res.distanceKm,
+                            distanceRemainingM: Int(res.distanceKm * 1000),
                             snappedDriverLocation: snappedPoint
                         )
                         onReroute(res)

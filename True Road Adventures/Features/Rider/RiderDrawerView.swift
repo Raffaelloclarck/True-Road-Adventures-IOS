@@ -5,7 +5,8 @@ struct RiderDrawerView: View {
     var onNavigate: (RiderDrawerDestination) -> Void
     var onClose: () -> Void
 
-    @State private var showDriverConfirm = false
+    // Replace with the actual App Store URL once the driver app is published.
+    private let driverAppStoreURL = URL(string: "https://apps.apple.com/app/true-road-driver/id0000000000")!
 
     var body: some View {
         HStack(spacing: 0) {
@@ -28,18 +29,6 @@ struct RiderDrawerView: View {
                 driverBanner
                 Spacer(minLength: 40)
             }
-        }
-        .confirmationDialog(
-            "Word chauffeur",
-            isPresented: $showDriverConfirm,
-            titleVisibility: .visible
-        ) {
-            Button("Aanvraag indienen") {
-                Task { await authService.applyAsDriver() }
-            }
-            Button("Annuleren", role: .cancel) {}
-        } message: {
-            Text("Wil je chauffeur worden bij True Road? We beoordelen je aanvraag zo snel mogelijk.")
         }
     }
 
@@ -175,7 +164,7 @@ struct RiderDrawerView: View {
 
     private var driverBanner: some View {
         Button {
-            showDriverConfirm = true
+            UIApplication.shared.open(driverAppStoreURL)
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: "car.fill")

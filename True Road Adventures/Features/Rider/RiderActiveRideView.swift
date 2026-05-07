@@ -2,7 +2,24 @@ import SwiftUI
 
 struct RiderActiveRideView: View {
     let ride: Ride
+    /// When true (e.g. opened from chat push), the chat sheet is shown once after first appear.
+    var presentChatOnAppear: Bool = false
+
     @EnvironmentObject private var rideService: RideService
+
+    /// Canonical Firestore document for this screen's `ride.id` (preferred over global `activeRide`).
+    @State private var documentRide: Ride?
+
+    /// Resolved model: document stream for this id, else matching `activeRide`, else the initial `ride`.
+    private var currentRide: Ride {
+        if let doc = documentRide, doc.id == ride.id {
+            return doc
+        }
+        if let active = rideService.activeRide, active.id == ride.id {
+            return active
+        }
+        return ride
+    }
     @EnvironmentObject private var networkMonitor: NetworkMonitor
     @EnvironmentObject private var authService: AuthService
     @Environment(\.dismiss) private var dismiss
@@ -25,8 +42,10 @@ struct RiderActiveRideView: View {
 
     @State private var showCompletion = false
     @State private var showChat = false
+    @State private var didPresentChatFromPush = false
     @State private var showShareSheet = false
     @State private var showCancelConfirm = false
+    @State private var cancelError: Error? = nil
     @State private var shareItems: [Any] = []
 
     var body: some View {
@@ -34,14 +53,14 @@ struct RiderActiveRideView: View {
             mapLayer
             VStack(spacing: 0) {
                 topBar
-                if ride.status == .accepted, ride.driverLocation == nil {
+                if currentRide.status == .accepted, currentRide.driverLocation == nil {
                     preparingBanner
                 }
                 Spacer()
                 ridePanel
             }
         // Re-center button — shown after rider pans away while driver is en route or during ride
-        if (ride.status == .accepted || ride.status == .pickedUp) && !isFollowingDriver {
+        if (currentRide.status == .accepted || currentRide.status == .pickedUp) && !isFollowingDriver {
                 Button { isFollowingDriver = true } label: {
                     Image(systemName: "location.fill")
                         .font(.system(size: 18))
@@ -61,7 +80,7 @@ struct RiderActiveRideView: View {
         .navigationBarHidden(true)
         .fullScreenCover(isPresented: $showCompletion) {
             RiderRideCompletionView(
-                ride: rideService.activeRide ?? ride,
+                ride: currentRide,
                 driverUser: driverUser,
                 onDismiss: { dismiss() }
             )
@@ -73,6 +92,13 @@ struct RiderActiveRideView: View {
             NavigationStack {
                 ChatView(rideId: ride.id)
                     .environmentObject(authService)
+                    .environmentObject(rideService)
+            }
+        }
+        .onAppear {
+            if presentChatOnAppear, !didPresentChatFromPush {
+                didPresentChatFromPush = true
+                showChat = true
             }
         }
         .sheet(isPresented: $showShareSheet) {
@@ -86,16 +112,20 @@ struct RiderActiveRideView: View {
         ) {
             Button(String(localized: "ride.cancel.confirm"), role: .destructive) {
                 Task {
-                    try? await rideService.updateStatus(ride.id, status: .cancelled)
-                    await MainActor.run { dismiss() }
+                    do {
+                        try await rideService.updateStatus(ride.id, status: .cancelled)
+                        await MainActor.run { dismiss() }
+                    } catch {
+                        await MainActor.run { cancelError = error }
+                    }
                 }
             }
             Button(String(localized: "ride.cancel.back"), role: .cancel) {}
         } message: {
             Text("ride.cancel.message")
         }
-        .task {
-            await loadDriverData()
+        .task(id: currentRide.driverId) {
+            await loadDriverData(for: currentRide.driverId)
         }
         .task(id: routeTaskKey) {
             await loadRoute()
@@ -103,11 +133,11 @@ struct RiderActiveRideView: View {
         // Auto re-enable follow after 12 s when the rider panned away
         .task(id: isFollowingDriver) {
             guard !isFollowingDriver,
-                  ride.status == .accepted || ride.status == .pickedUp else { return }
+                  currentRide.status == .accepted || currentRide.status == .pickedUp else { return }
             try? await Task.sleep(for: .seconds(12))
             isFollowingDriver = true
         }
-        .onChange(of: ride.driverLocation) { _, newLocation in
+        .onChange(of: currentRide.driverLocation) { _, newLocation in
             guard newLocation != nil else { return }
             // Speed estimation from consecutive driver location deltas
             if let prev = lastDriverLoc, let prevTime = lastDriverLocTime, let cur = newLocation {
@@ -125,7 +155,7 @@ struct RiderActiveRideView: View {
                 Task { await loadRoute() }
             }
         }
-        .onChange(of: ride.status) { _, newStatus in
+        .onChange(of: currentRide.status) { _, newStatus in
             if newStatus == .pickedUp || newStatus == .accepted { isFollowingDriver = true }
             if newStatus == .completed {
                 showCompletion = true
@@ -134,41 +164,55 @@ struct RiderActiveRideView: View {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             }
         }
-        // Direct Firestore subscription so we observe .completed and .cancelled
-        // even when RideService.activeRide has already been cleared.
+        // Firestore document listener: keeps status / driver / location in sync for this ride id
+        // even when global `activeRide` points at a different row or is temporarily nil.
         .task(id: ride.id) {
             for await updatedRide in rideService.subscribeToRide(ride.id) {
                 guard let updated = updatedRide else { break }
-                if updated.status == .completed, !showCompletion {
-                    showCompletion = true
+                await MainActor.run {
+                    documentRide = updated
+                    if updated.status == .completed, !showCompletion {
+                        showCompletion = true
+                    }
+                    if updated.status == .cancelled {
+                        dismiss()
+                    }
                 }
-                if updated.status == .cancelled {
-                    dismiss()
-                    break
-                }
+                if updated.status == .cancelled { break }
             }
+        }
+        .alert(
+            String(localized: "ride.cancel.error.title"),
+            isPresented: Binding(get: { cancelError != nil }, set: { if !$0 { cancelError = nil } })
+        ) {
+            Button(String(localized: "action.ok"), role: .cancel) { cancelError = nil }
+        } message: {
+            Text(cancelError?.localizedDescription ?? "")
         }
     }
 
-    // Key that changes when we need a fresh route (status changed or driver appeared)
+    // Key that changes when we need a fresh route (status changed).
+    // Driver lat/lng is intentionally excluded: live location updates are handled
+    // by onChange(of: currentRide.driverLocation) every 10 ticks. Including raw
+    // coordinates here caused a new Directions API fetch on every Firestore update.
     private var routeTaskKey: String {
-        "\(ride.status.rawValue)-\(ride.driverLocation?.latitude ?? 0)-\(ride.driverLocation?.longitude ?? 0)"
+        currentRide.status.rawValue
     }
 
     // MARK: - Map
 
     private var mapLayer: some View {
         TRAGoogleMapView(
-            pickup: ride.pickupLocation,
-            destination: ride.destinationLocation,
-            driverLocation: ride.driverLocation,
+            pickup: currentRide.pickupLocation,
+            destination: currentRide.destinationLocation,
+            driverLocation: currentRide.driverLocation,
             customerLocation: nil,
             routePoints: routePoints,
             trafficSegments: trafficSegments,
-            bearing: ride.driverBearing ?? 0,
+            bearing: currentRide.driverBearing ?? 0,
             speedKmh: estimatedSpeedKmh,
-            followDriver: (ride.status == .accepted || ride.status == .pickedUp) && isFollowingDriver,
-            showTraffic: true,
+            followDriver: (currentRide.status == .accepted || currentRide.status == .pickedUp) && isFollowingDriver,
+            showTraffic: false,
             onUserPanned: { isFollowingDriver = false }
         )
         .ignoresSafeArea()
@@ -193,7 +237,7 @@ struct RiderActiveRideView: View {
 
             Spacer()
 
-            StatusChip(label: ride.status.chipLabel, color: ride.status.chipColor)
+            StatusChip(label: currentRide.status.chipLabel, color: currentRide.status.chipColor)
                 .padding(.top, 56)
                 .padding(.trailing, 16)
         }
@@ -220,7 +264,7 @@ struct RiderActiveRideView: View {
         .padding(.top, 8)
         .shadow(color: .black.opacity(0.08), radius: 4)
         .transition(.move(edge: .top).combined(with: .opacity))
-        .animation(.easeInOut(duration: 0.3), value: ride.driverLocation == nil)
+        .animation(.easeInOut(duration: 0.3), value: currentRide.driverLocation == nil)
     }
 
     // MARK: - Bottom panel
@@ -228,14 +272,14 @@ struct RiderActiveRideView: View {
     private var ridePanel: some View {
         TRABottomSheet {
             VStack(spacing: 16) {
-                RideStatusIndicator(currentStatus: ride.status)
+                RideStatusIndicator(currentStatus: currentRide.status)
                     .padding(.horizontal, 16)
 
                 Divider()
 
                 // Show final fare prominently when ride is completed
-                if ride.status == .completed {
-                    finalFareBanner(fare: ride.totalFareFinal ?? ride.totalFareRealtime)
+                if currentRide.status == .completed {
+                    finalFareBanner(fare: currentRide.totalFareFinal ?? currentRide.totalFareRealtime)
                         .padding(.horizontal, 16)
                     Divider()
                 }
@@ -269,7 +313,7 @@ struct RiderActiveRideView: View {
                     .foregroundStyle(AppColors.boltGreen)
             }
             Spacer()
-            Text(ride.tier.displayName)
+            Text(currentRide.tier.displayName)
                 .font(AppFont.labelSmall())
                 .foregroundStyle(AppColors.gray700)
                 .padding(.horizontal, 10)
@@ -355,7 +399,7 @@ struct RiderActiveRideView: View {
 
     @ViewBuilder
     private var etaView: some View {
-        let seconds = directionsEtaSeconds ?? ride.etaToPickupSeconds
+        let seconds = directionsEtaSeconds ?? currentRide.etaToPickupSeconds
         if let eta = seconds {
             VStack(spacing: 2) {
                 Text("\(max(1, eta / 60))")
@@ -391,7 +435,7 @@ struct RiderActiveRideView: View {
             actionButton(icon: "message.fill",       label: "action.chat",         color: AppColors.whatsAppGreen,  isDisabled: false) { showChat = true }
             actionButton(icon: "phone.fill",         label: "action.call",         color: AppColors.accentBlue,     isDisabled: false) { callDriver() }
             actionButton(icon: "square.and.arrow.up",label: "action.share",        color: AppColors.gray500,        isDisabled: false) { shareLocation() }
-            if ride.status == .searching {
+            if currentRide.status == .searching {
                 actionButton(icon: "xmark",              label: "action.cancel_short", color: AppColors.errorRed,       isDisabled: !networkMonitor.isOnline) {
                     showCancelConfirm = true
                 }
@@ -422,8 +466,12 @@ struct RiderActiveRideView: View {
 
     // MARK: - Async loaders
 
-    private func loadDriverData() async {
-        guard let driverId = ride.driverId else { return }
+    private func loadDriverData(for driverId: String?) async {
+        guard let driverId else {
+            driverUser = nil
+            driverRating = nil
+            return
+        }
         async let userTask = authService.getUserById(driverId)
         async let ratingsTask = authService.fetchRatings(for: driverId)
         let (user, ratings) = await (userTask, ratingsTask)
@@ -431,37 +479,35 @@ struct RiderActiveRideView: View {
         if !ratings.isEmpty {
             let avg = Double(ratings.map(\.score).reduce(0, +)) / Double(ratings.count)
             driverRating = avg
+        } else {
+            driverRating = nil
         }
     }
 
     private func loadRoute() async {
         routeError = false
-        let destination: LatLng
-        switch ride.status {
+
+        let result: DirectionsResult
+        switch currentRide.status {
+
+        case .searching:
+            result = await rideService.fetchRoute(
+                from: currentRide.pickupLocation,
+                to: currentRide.destinationLocation
+            )
+
+        case .accepted, .arrived:
+            guard let driverLoc = currentRide.driverLocation else { return }
+            result = await rideService.fetchRoute(from: driverLoc, to: currentRide.pickupLocation)
+
         case .pickedUp:
-            destination = ride.destinationLocation
+            let origin = currentRide.driverLocation ?? currentRide.pickupLocation
+            result = await rideService.fetchRoute(from: origin, to: currentRide.destinationLocation)
+
         default:
-            destination = ride.pickupLocation
-        }
-        // When the driver has no location yet (just accepted) and we're not
-        // yet in the pickedUp phase, skip the fetch – origin and destination
-        // would both be the pickup point, causing a zero-length route that
-        // falls back to a straight line. The .onChange(of: ride.driverLocation)
-        // modifier will trigger a fresh fetch as soon as the driver's GPS
-        // position becomes available.
-        guard let driverLoc = ride.driverLocation else {
-            if ride.status != .pickedUp { return }
-            // For pickedUp without a driver location, route pickup → destination.
-            let result = await rideService.fetchRoute(from: destination, to: ride.destinationLocation)
-            if result.points.isEmpty { routeError = true } else {
-                routePoints = result.points
-                trafficSegments = result.trafficSegments
-                directionsEtaSeconds = result.totalDurationSeconds
-            }
             return
         }
-        let origin = driverLoc
-        let result = await rideService.fetchRoute(from: origin, to: destination)
+
         if result.points.isEmpty {
             routeError = true
         } else {
@@ -482,8 +528,8 @@ struct RiderActiveRideView: View {
     }
 
     private func shareLocation() {
-        let pickupAddress = ride.pickupAddress ?? String(localized: "route.pickup_fallback")
-        let destAddress = ride.destinationAddress ?? String(localized: "route.destination_fallback")
+        let pickupAddress = currentRide.pickupAddress ?? String(localized: "route.pickup_fallback")
+        let destAddress = currentRide.destinationAddress ?? String(localized: "route.destination_fallback")
         let text = String(format: String(localized: "active.ride.share_text"), pickupAddress, destAddress)
         shareItems = [text]
         showShareSheet = true

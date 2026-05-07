@@ -8,13 +8,9 @@ import GoogleSignIn
 import GoogleMaps
 #endif
 
-// MARK: - Notification name used for deep linking to the active ride screen
-extension Notification.Name {
-    static let TRAOpenRide = Notification.Name("TRAOpenRide")
-}
-
 final class AppDelegate: NSObject, UIApplicationDelegate {
     var pushService: PushService?
+    var pushNavigationStore: PushNavigationStore?
 
     // Swift static `let` runs once the class is first referenced — this fires
     // before UIKit constructs the delegate, which silences the
@@ -58,53 +54,53 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     /// Configures Firebase exactly once. Safe to call multiple times — subsequent calls are no-ops.
     /// Must be invoked before any Firebase service (Firestore, Auth, etc.) is first accessed.
     static func configureFirebase() {
-        guard FirebaseApp.app() == nil else { return }
+        if FirebaseApp.app() == nil {
+            #if RIDER
+            let candidates: [(name: String, subdir: String?)] = [
+                ("GoogleService-Info-Rider", nil),
+                ("GoogleService-Info-Rider", "Rider"),
+                ("GoogleService-Info",       nil),
+            ]
+            #elseif DRIVER
+            let candidates: [(name: String, subdir: String?)] = [
+                ("GoogleService-Info-Driver", nil),
+                ("GoogleService-Info-Driver", "Driver"),
+                ("GoogleService-Info",        nil),
+            ]
+            #else
+            let candidates: [(name: String, subdir: String?)] = [
+                ("GoogleService-Info", nil),
+            ]
+            #endif
 
-        #if RIDER
-        let candidates: [(name: String, subdir: String?)] = [
-            ("GoogleService-Info-Rider", nil),
-            ("GoogleService-Info-Rider", "Rider"),
-            ("GoogleService-Info",       nil),
-        ]
-        #elseif DRIVER
-        let candidates: [(name: String, subdir: String?)] = [
-            ("GoogleService-Info-Driver", nil),
-            ("GoogleService-Info-Driver", "Driver"),
-            ("GoogleService-Info",        nil),
-        ]
-        #else
-        let candidates: [(name: String, subdir: String?)] = [
-            ("GoogleService-Info", nil),
-        ]
-        #endif
+            // Walk through candidate paths in order; use the first one that resolves
+            // to a valid FirebaseOptions. This handles flat bundle copies, Xcode
+            // Synchronized Folders (which preserve the folder hierarchy), and
+            // single-plist projects.
+            let options = candidates.lazy.compactMap { candidate -> FirebaseOptions? in
+                guard let path = Bundle.main.path(
+                    forResource: candidate.name,
+                    ofType: "plist",
+                    inDirectory: candidate.subdir
+                ) else { return nil }
+                return FirebaseOptions(contentsOfFile: path)
+            }.first
 
-        // Walk through candidate paths in order; use the first one that resolves
-        // to a valid FirebaseOptions. This handles flat bundle copies, Xcode
-        // Synchronized Folders (which preserve the folder hierarchy), and
-        // single-plist projects.
-        let options = candidates.lazy.compactMap { candidate -> FirebaseOptions? in
-            guard let path = Bundle.main.path(
-                forResource: candidate.name,
-                ofType: "plist",
-                inDirectory: candidate.subdir
-            ) else { return nil }
-            return FirebaseOptions(contentsOfFile: path)
-        }.first
-
-        if let options {
-            FirebaseApp.configure(options: options)
-        } else {
-            assertionFailure(
-                "[TRA] No GoogleService-Info plist found in the app bundle. " +
-                "Add the correct GoogleService-Info plist to the target and ensure " +
-                "it is included in the 'Copy Bundle Resources' build phase."
-            )
-            FirebaseApp.configure()
+            if let options {
+                FirebaseApp.configure(options: options)
+            } else {
+                assertionFailure(
+                    "[TRA] No GoogleService-Info plist found in the app bundle. " +
+                    "Add the correct GoogleService-Info plist to the target and ensure " +
+                    "it is included in the 'Copy Bundle Resources' build phase."
+                )
+                FirebaseApp.configure()
+            }
         }
 
-        // Set Google Sign-In client ID from the loaded Firebase configuration.
-        // GIDSignIn does not read from the GoogleService-Info plist automatically
-        // when FirebaseApp is configured with a custom options object.
+        // Always configure Google Sign-In — this must run even when Firebase was
+        // already initialised by the early Obj-C +load method, which does not set
+        // up GIDSignIn. Skipping this causes a crash: "No active configuration."
         if let clientID = FirebaseApp.app()?.options.clientID {
             GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
         }
@@ -143,7 +139,7 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         completionHandler([.banner, .badge, .sound])
     }
 
-    /// Handle notification taps — broadcast a deep link so the UI navigates to the active ride.
+    /// Handle notification taps — route to the correct screen via PushNavigationStore.
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse,
@@ -151,12 +147,12 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     ) {
         let userInfo = response.notification.request.content.userInfo
         Messaging.messaging().appDidReceiveMessage(userInfo)
-        if let rideId = userInfo["rideId"] as? String {
-            NotificationCenter.default.post(
-                name: .TRAOpenRide,
-                object: nil,
-                userInfo: ["rideId": rideId]
-            )
+        let screenStr = userInfo["screen"] as? String ?? "home"
+        let screen = PushScreen(rawValue: screenStr) ?? .home
+        let rideId = userInfo["rideId"] as? String
+        let intent = PushNotificationIntent(rideId: rideId, screen: screen)
+        Task { @MainActor [weak self] in
+            self?.pushNavigationStore?.set(intent)
         }
         completionHandler()
     }

@@ -5,6 +5,8 @@ import AVFoundation
 
 struct DriverActiveRideView: View {
     let ride: Ride
+    /// When true (e.g. chat push deep link), the chat sheet is shown once after first appear.
+    var presentChatOnAppear: Bool = false
 
     @EnvironmentObject private var rideService: RideService
     @EnvironmentObject private var locationService: LocationService
@@ -15,7 +17,10 @@ struct DriverActiveRideView: View {
     // Navigation state
     @State private var navigationStep: String?
     @State private var navigationManeuver: String?
+    @State private var nextNavigationStep: String?
+    @State private var nextNavigationManeuver: String?
     @State private var distanceToNextTurnM: Int = 0
+    @State private var distanceRemainingM: Int = 0
     @State private var etaSeconds: Int?
     @State private var currentRoutePoints: [Coordinate2D] = []
     @State private var currentTrafficSegments: [TrafficSegment] = []
@@ -29,10 +34,12 @@ struct DriverActiveRideView: View {
     @State private var useHeadingUp = true
     @State private var currentBearing: Double = 0
     @State private var currentSpeedKmh: Double = 0
+    @State private var mapBottomInset: CGFloat = 0
 
     // UI state
     @State private var isPanelExpanded = true
     @State private var showChat = false
+    @State private var didPresentChatFromPush = false
     @State private var isMuted = false
 
     // Voice
@@ -63,7 +70,9 @@ struct DriverActiveRideView: View {
     }
 
     private var isNavigating: Bool {
-        currentRide.status == .accepted || currentRide.status == .pickedUp
+        currentRide.status == .accepted ||
+        currentRide.status == .arrived  ||
+        currentRide.status == .pickedUp
     }
 
     // Computed fare based on live local state
@@ -86,24 +95,43 @@ struct DriverActiveRideView: View {
             VStack(spacing: 0) {
                 topControls
                 Spacer()
-                if !isPanelExpanded {
-                    collapsedPill
-                        .padding(.bottom, 24)
-                } else {
-                    bottomPanel
+                Group {
+                    if !isPanelExpanded {
+                        if isNavigating, let eta = etaSeconds, eta > 0 {
+                            compactETABar
+                                .padding(.bottom, 24)
+                        } else {
+                            collapsedPill
+                                .padding(.bottom, 24)
+                        }
+                    } else {
+                        bottomPanel
+                    }
+                }
+                .background {
+                    GeometryReader { geo in
+                        Color.clear.preference(
+                            key: BottomOverlayHeightKey.self,
+                            value: geo.size.height
+                        )
+                    }
                 }
             }
             if isNavigating {
                 fabColumn
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                    .padding(.bottom, mapBottomInset + 120)
+                    .padding(.trailing, 16)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
             }
         }
+        .onPreferenceChange(BottomOverlayHeightKey.self) { mapBottomInset = $0 }
         .ignoresSafeArea()
         .navigationBarHidden(true)
         .sheet(isPresented: $showChat) {
             NavigationStack {
                 ChatView(rideId: currentRide.id)
                     .environmentObject(authService)
+                    .environmentObject(rideService)
             }
         }
         .onAppear {
@@ -125,6 +153,10 @@ struct DriverActiveRideView: View {
                     gpsLocation = lastKnown
                 }
                 startNavigation()
+            }
+            if presentChatOnAppear, !didPresentChatFromPush {
+                didPresentChatFromPush = true
+                showChat = true
             }
         }
         .onDisappear {
@@ -159,6 +191,12 @@ struct DriverActiveRideView: View {
                     navigationStep = step.instruction
                     navigationManeuver = step.maneuver
                 }
+                // Next-turn preview
+                let nextStep = snap.steps.count > snap.currentStepIndex + 1
+                    ? snap.steps[snap.currentStepIndex + 1]
+                    : nil
+                nextNavigationStep = nextStep?.instruction
+                nextNavigationManeuver = nextStep?.maneuver
 
                 // Reset zone tracking when the step advances
                 if stepIdx != lastAnnouncedStepIndex {
@@ -189,6 +227,7 @@ struct DriverActiveRideView: View {
             }
 
             distanceToNextTurnM = dist
+            distanceRemainingM = snap.distanceRemainingM
             if snap.etaSeconds > 0 {
                 etaSeconds = snap.etaSeconds
 
@@ -339,8 +378,9 @@ struct DriverActiveRideView: View {
             bearing: useHeadingUp ? currentBearing : 0,
             speedKmh: currentSpeedKmh,
             followDriver: isFollowingDriver && isNavigating,
-            showTraffic: true,
+            showTraffic: false,
             onUserPanned: { isFollowingDriver = false },
+            bottomInset: mapBottomInset,
             distanceToNextTurnM: distanceToNextTurnM
         )
         .ignoresSafeArea()
@@ -349,7 +389,7 @@ struct DriverActiveRideView: View {
     // MARK: - Top Controls
 
     private var topControls: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 4) {
             HStack(spacing: 12) {
                 Button { dismiss() } label: {
                     Image(systemName: "chevron.left")
@@ -368,16 +408,8 @@ struct DriverActiveRideView: View {
 
                 Spacer()
 
-                Button { isMuted.toggle() } label: {
-                    Image(systemName: isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                        .font(.system(size: 18))
-                        .foregroundStyle(isMuted ? AppColors.errorRed : AppColors.gray700)
-                        .frame(width: 44, height: 44)
-                        .background(Color.white)
-                        .clipShape(Circle())
-                        .shadow(color: .black.opacity(0.12), radius: 4)
-                }
-                .buttonStyle(.plain)
+                // Placeholder to keep StatusChip centred (same width as back button)
+                Color.clear.frame(width: 44, height: 44)
             }
             .padding(.horizontal, 16)
             .padding(.top, 60)
@@ -387,8 +419,7 @@ struct DriverActiveRideView: View {
                     reroutingBanner
                         .padding(.horizontal, 16)
                 } else if let step = navigationStep {
-                    navigationBanner(step: step)
-                        .padding(.horizontal, 16)
+                    navigationCard(step: step)
                 } else if currentRoutePoints.isEmpty {
                     loadingBanner
                         .padding(.horizontal, 16)
@@ -397,40 +428,60 @@ struct DriverActiveRideView: View {
         }
     }
 
-    private func navigationBanner(step: String) -> some View {
-        HStack(spacing: 14) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(AppColors.boltGreen)
-                    .frame(width: 52, height: 52)
+    private func navigationCard(step: String) -> some View {
+        // Primary banner color: #1A3C34 — exact Google Maps dark teal
+        // Secondary strip color: #1F4A40 — Google Maps next-turn lighter teal
+        let primaryGreen   = Color(hex: 0x1A3C34)
+        let secondaryGreen = Color(hex: 0x1F4A40)
+        return VStack(spacing: 0) {
+            // Main banner — Google Maps exact layout:
+            // left: maneuver icon (36pt, no box)
+            // right: VStack — street name (24pt bold) on top, distance (20pt bold) below
+            HStack(alignment: .center, spacing: 16) {
                 Image(systemName: maneuverIcon(navigationManeuver))
-                    .font(.system(size: 22, weight: .bold))
+                    .font(.system(size: 36, weight: .bold))
                     .foregroundStyle(.white)
-            }
 
-            VStack(alignment: .leading, spacing: 2) {
-                if distanceToNextTurnM > 0 {
-                    Text(formatDistance(distanceToNextTurnM))
-                        .font(AppFont.titleMedium())
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(step)
+                        .font(AppFont.headlineSmall())   // 24pt bold — dominant element
                         .foregroundStyle(.white)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if distanceToNextTurnM > 0 {
+                        Text(formatDistance(distanceToNextTurnM))
+                            .font(.system(size: 20, weight: .bold))  // 20pt bold — Google Maps spec
+                            .foregroundStyle(.white.opacity(0.85))
+                    }
                 }
-                Text(step)
-                    .font(AppFont.bodyMedium())
-                    .foregroundStyle(.white.opacity(0.9))
-                    .lineLimit(2)
-                if let eta = etaSeconds, eta > 0 {
-                    Text(formatEta(eta))
-                        .font(AppFont.labelSmall())
-                        .foregroundStyle(.white.opacity(0.6))
-                }
-            }
 
-            Spacer()
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 12)
+
+            // Next-turn strip — secondary background color
+            if let next = nextNavigationStep {
+                HStack(spacing: 10) {
+                    Image(systemName: maneuverIcon(nextNavigationManeuver))
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.75))
+                        .frame(width: 24, height: 24)
+                    Text("Dan: \(next)")
+                        .font(.system(size: 16, weight: .regular))
+                        .foregroundStyle(.white.opacity(0.75))
+                        .lineLimit(1)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(secondaryGreen)
+            }
         }
-        .padding(14)
-        .background(AppColors.darkSurface)
-        .clipShape(RoundedRectangle(cornerRadius: AppRadius.r20))
-        .shadow(color: .black.opacity(0.2), radius: 8)
+        .background(primaryGreen)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.r16))
+        .shadow(color: .black.opacity(0.25), radius: 8)
     }
 
     private var loadingBanner: some View {
@@ -487,20 +538,20 @@ struct DriverActiveRideView: View {
                 .shadow(color: .black.opacity(0.15), radius: 4)
             }
 
-            Button {
-                useHeadingUp.toggle()
-            } label: {
-                Image(systemName: useHeadingUp ? "location.north.fill" : "safari")
-                    .font(.system(size: 18))
-                    .foregroundStyle(AppColors.boltGreen)
-                    .frame(width: 44, height: 44)
-                    .background(Color.white)
-                    .clipShape(Circle())
-                    .shadow(color: .black.opacity(0.12), radius: 4)
-            }
-            .buttonStyle(.plain)
-
-            if !isFollowingDriver {
+            if isFollowingDriver {
+                Button {
+                    useHeadingUp.toggle()
+                } label: {
+                    Image(systemName: useHeadingUp ? "location.north.fill" : "safari")
+                        .font(.system(size: 18))
+                        .foregroundStyle(AppColors.boltGreen)
+                        .frame(width: 44, height: 44)
+                        .background(Color.white)
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.12), radius: 4)
+                }
+                .buttonStyle(.plain)
+            } else {
                 Button {
                     isFollowingDriver = true
                 } label: {
@@ -514,10 +565,18 @@ struct DriverActiveRideView: View {
                 }
                 .buttonStyle(.plain)
             }
+
+            Button { isMuted.toggle() } label: {
+                Image(systemName: isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                    .font(.system(size: 18))
+                    .foregroundStyle(isMuted ? AppColors.errorRed : AppColors.gray700)
+                    .frame(width: 44, height: 44)
+                    .background(Color.white)
+                    .clipShape(Circle())
+                    .shadow(color: .black.opacity(0.12), radius: 4)
+            }
+            .buttonStyle(.plain)
         }
-        .padding(.top, 220)
-        .padding(.trailing, 16)
-        .frame(maxWidth: .infinity, alignment: .trailing)
     }
 
     // MARK: - Bottom Panel
@@ -534,6 +593,38 @@ struct DriverActiveRideView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
+            .background(Color.white)
+            .clipShape(Capsule())
+            .shadow(color: .black.opacity(0.12), radius: 8)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var compactETABar: some View {
+        Button {
+            withAnimation(.spring(response: 0.3)) { isPanelExpanded = true }
+        } label: {
+            HStack(spacing: 0) {
+                if let eta = etaSeconds, eta > 0 {
+                    Text("\(max(1, (eta + 30) / 60)) min")
+                        .font(AppFont.titleSmall())
+                        .foregroundStyle(AppColors.boltGreen)
+                    Text("  ·  \(formatDistance(distanceRemainingM))  ·  ")
+                        .font(AppFont.bodySmall())
+                        .foregroundStyle(AppColors.gray500)
+                    Text(etaArrivalTime(eta))
+                        .font(AppFont.bodySmall())
+                        .foregroundStyle(AppColors.gray500)
+                } else {
+                    StatusChip(label: currentRide.status.chipLabel, color: currentRide.status.chipColor)
+                }
+                Spacer()
+                Image(systemName: "chevron.up")
+                    .font(.system(size: 13))
+                    .foregroundStyle(AppColors.gray400)
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 12)
             .background(Color.white)
             .clipShape(Capsule())
             .shadow(color: .black.opacity(0.12), radius: 8)
@@ -584,6 +675,12 @@ struct DriverActiveRideView: View {
                 Divider()
             }
 
+            // Discount banner — shown whenever the ride has a promo code applied
+            if let code = currentRide.appliedDiscountCode {
+                discountBanner(code: code, amount: currentRide.discountAmount)
+                Divider()
+            }
+
             // Live fare meter (only shown after pickup)
             if currentRide.status == .pickedUp {
                 liveFareMeter
@@ -631,6 +728,35 @@ struct DriverActiveRideView: View {
                     .foregroundStyle(AppColors.gray500)
             }
             Spacer()
+        }
+    }
+
+    // MARK: - Discount banner
+
+    private func discountBanner(code: String, amount: Double?) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(AppColors.boltGreenLight)
+                    .frame(width: 36, height: 36)
+                Image(systemName: "tag.fill")
+                    .font(.system(size: 14))
+                    .foregroundStyle(AppColors.boltGreen)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Kortingscode toegepast")
+                    .font(AppFont.labelMedium())
+                    .foregroundStyle(AppColors.gray500)
+                Text(code)
+                    .font(.system(.body, design: .monospaced).weight(.semibold))
+                    .foregroundStyle(AppColors.gray900)
+            }
+            Spacer()
+            if let amount, amount > 0 {
+                Text(String(format: "− SRD %.2f", amount))
+                    .font(AppFont.labelMedium())
+                    .foregroundStyle(AppColors.boltGreen)
+            }
         }
     }
 
@@ -742,12 +868,13 @@ struct DriverActiveRideView: View {
             let rideSeconds = localRideSeconds > 0 ? localRideSeconds : (pickedUpTime.map { Int(Date().timeIntervalSince($0)) } ?? currentRide.rideSeconds)
             let totalWaitSeconds = currentRide.waitSeconds + localWaitSeconds
 
-            let finalFare = FareCalculator.realtimeFare(
+            let meterFare = FareCalculator.realtimeFare(
                 distanceKm: distanceKm,
                 rideSeconds: rideSeconds,
                 waitSeconds: totalWaitSeconds,
                 tier: currentRide.tier
             )
+            let finalFare = max(meterFare - (currentRide.discountAmount ?? 0), 0)
 
             try? await rideService.finalizeRide(
                 currentRide.id,
@@ -807,12 +934,17 @@ struct DriverActiveRideView: View {
         meters >= 1000 ? String(format: "%.1f km", Double(meters) / 1000) : "\(meters) m"
     }
 
-    private func formatEta(_ seconds: Int) -> String {
-        let cal = Calendar.current
-        let arrival = cal.date(byAdding: .second, value: seconds, to: Date()) ?? Date()
-        let hm = arrival.formatted(.dateTime.hour().minute())
-        let minutes = max(1, (seconds + 30) / 60)
-        return String(format: String(localized: "active.ride.eta"), hm, minutes)
+    private func etaArrivalTime(_ seconds: Int) -> String {
+        (Calendar.current.date(byAdding: .second, value: seconds, to: Date()) ?? Date())
+            .formatted(.dateTime.hour().minute())
+    }
+
+}
+
+private struct BottomOverlayHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
 

@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum AdminTab: String {
-    case rides, drivers, notifications, profile
+    case rides, drivers, discounts, notifications, profile
 }
 
 struct AdminTabView: View {
@@ -27,6 +27,9 @@ struct AdminTabView: View {
             AdminRidesView()
         case .drivers:
             AdminDriversView()
+        case .discounts:
+            AdminDiscountCodesView(currentUser: currentUser)
+                .environmentObject(container.discountCodeService)
         case .notifications:
             AdminNotificationView()
         case .profile:
@@ -39,10 +42,11 @@ private struct AdminTabBar: View {
     @Binding var selectedTab: AdminTab
 
     private let tabs: [(tab: AdminTab, icon: String, label: LocalizedStringKey)] = [
-        (.rides,         "car.fill",       "admin.tab.rides"),
-        (.drivers,       "person.2.fill",  "admin.tab.drivers"),
-        (.notifications, "bell.fill",      "admin.tab.notifications"),
-        (.profile,       "person.fill",    "admin.tab.profile"),
+        (.rides,         "car.fill",        "admin.tab.rides"),
+        (.drivers,       "person.2.fill",   "admin.tab.drivers"),
+        (.discounts,     "tag.fill",        "admin.tab.discounts"),
+        (.notifications, "bell.fill",       "admin.tab.notifications"),
+        (.profile,       "person.fill",     "admin.tab.profile"),
     ]
 
     var body: some View {

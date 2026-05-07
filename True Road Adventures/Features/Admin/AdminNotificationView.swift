@@ -10,14 +10,24 @@ struct AdminNotificationView: View {
     @State private var isSending = false
     @State private var result: SendResult?
 
+    private let titleLimit = 60
+    private let bodyLimit = 200
+
     enum NotificationTarget: String, CaseIterable, Identifiable {
         case all, riders, drivers
         var id: String { rawValue }
-        var label: LocalizedStringKey {
+        var label: String {
             switch self {
-            case .all:     return "admin.notification.target.all"
-            case .riders:  return "admin.notification.target.riders"
-            case .drivers: return "admin.notification.target.drivers"
+            case .all:     return "Iedereen"
+            case .riders:  return "Rijders"
+            case .drivers: return "Chauffeurs"
+            }
+        }
+        var icon: String {
+            switch self {
+            case .all:     return "globe"
+            case .riders:  return "figure.walk"
+            case .drivers: return "car.fill"
             }
         }
         var firestoreValue: String {
@@ -40,9 +50,20 @@ struct AdminNotificationView: View {
             ScrollView {
                 VStack(spacing: 0) {
                     pageHeader
-                    formSection
-                        .padding(.horizontal, 16)
-                        .padding(.top, 24)
+
+                    VStack(spacing: 12) {
+                        titleCard
+                        bodyCard
+                        targetCard
+                        if isFormValid {
+                            previewCard
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 24)
+                    .animation(.easeInOut(duration: 0.25), value: isFormValid)
+
                     sendButton
                         .padding(.horizontal, 16)
                         .padding(.top, 24)
@@ -65,6 +86,8 @@ struct AdminNotificationView: View {
         }
     }
 
+    // MARK: - Header
+
     private var pageHeader: some View {
         ZStack(alignment: .bottom) {
             AppColors.boltGreen
@@ -74,109 +97,254 @@ struct AdminNotificationView: View {
                         bottomTrailingRadius: AppRadius.r32
                     )
                 )
-                .frame(height: 140)
+                .frame(height: 190)
 
-            VStack(spacing: 6) {
+            VStack(spacing: 8) {
                 ZStack {
                     Circle()
-                        .fill(Color.white.opacity(0.2))
-                        .frame(width: 60, height: 60)
+                        .fill(Color.white.opacity(0.25))
+                        .frame(width: 68, height: 68)
                     Image(systemName: "bell.badge.fill")
-                        .font(.system(size: 26, weight: .semibold))
+                        .font(.system(size: 28, weight: .semibold))
                         .foregroundStyle(.white)
                 }
-                Text("admin.notification.title")
+                .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+
+                Text("Notificaties")
                     .font(AppFont.titleLarge())
                     .foregroundStyle(.white)
+
+                Text("Stuur een melding naar rijders of chauffeurs")
+                    .font(AppFont.bodySmall())
+                    .foregroundStyle(.white.opacity(0.75))
                     .padding(.bottom, 20)
             }
         }
     }
 
-    private var formSection: some View {
-        VStack(spacing: 1) {
-            fieldRow(label: "admin.notification.field.title") {
-                TextField("admin.notification.field.title.placeholder", text: $title)
+    // MARK: - Form Cards
+
+    private var titleCard: some View {
+        HStack(spacing: 12) {
+            iconBadge(systemName: "textformat")
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Titel")
+                    .font(AppFont.labelSmall())
+                    .foregroundStyle(AppColors.gray500)
+                TextField("Bijv. Nieuwe rit beschikbaar...", text: $title)
                     .font(AppFont.bodyMedium())
                     .foregroundStyle(AppColors.gray900)
+                    .onChange(of: title) { _, new in
+                        if new.count > titleLimit { title = String(new.prefix(titleLimit)) }
+                    }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            Divider()
-                .padding(.leading, 56)
+            Text("\(title.count)/\(titleLimit)")
+                .font(AppFont.labelSmall())
+                .foregroundStyle(title.count >= titleLimit ? AppColors.errorRed : AppColors.gray300)
+                .monospacedDigit()
+        }
+        .padding(16)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.r16))
+        .shadow(color: .black.opacity(0.04), radius: 8, x: 0, y: 2)
+    }
 
-            fieldRow(label: "admin.notification.field.body", alignTop: true) {
-                TextField(
-                    "admin.notification.field.body.placeholder",
-                    text: $messageBody,
-                    axis: .vertical
-                )
-                .lineLimit(4, reservesSpace: true)
-                .font(AppFont.bodyMedium())
-                .foregroundStyle(AppColors.gray900)
-            }
-
-            Divider()
-                .padding(.leading, 56)
-
-            HStack(spacing: 14) {
-                Image(systemName: "person.2.fill")
-                    .font(.system(size: 16))
-                    .foregroundStyle(AppColors.boltGreen)
-                    .frame(width: 24)
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("admin.notification.field.target")
+    private var bodyCard: some View {
+        VStack(alignment: .trailing, spacing: 0) {
+            HStack(alignment: .top, spacing: 12) {
+                iconBadge(systemName: "text.alignleft")
+                    .padding(.top, 2)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Bericht")
                         .font(AppFont.labelSmall())
                         .foregroundStyle(AppColors.gray500)
-                    Picker("", selection: $target) {
-                        ForEach(NotificationTarget.allCases) { t in
-                            Text(t.label).tag(t)
-                        }
+                    TextField(
+                        "Schrijf hier je melding...",
+                        text: $messageBody,
+                        axis: .vertical
+                    )
+                    .lineLimit(4, reservesSpace: true)
+                    .font(AppFont.bodyMedium())
+                    .foregroundStyle(AppColors.gray900)
+                    .onChange(of: messageBody) { _, new in
+                        if new.count > bodyLimit { messageBody = String(new.prefix(bodyLimit)) }
                     }
-                    .pickerStyle(.segmented)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .background(Color.white)
+            .padding(.top, 16)
+            .padding(.bottom, 8)
+
+            Text("\(messageBody.count)/\(bodyLimit)")
+                .font(AppFont.labelSmall())
+                .foregroundStyle(messageBody.count >= bodyLimit ? AppColors.errorRed : AppColors.gray300)
+                .monospacedDigit()
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
         }
+        .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: AppRadius.r16))
+        .shadow(color: .black.opacity(0.04), radius: 8, x: 0, y: 2)
     }
 
-    private func fieldRow<Content: View>(
-        label: LocalizedStringKey,
-        alignTop: Bool = false,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        HStack(alignment: alignTop ? .top : .center, spacing: 14) {
-            Image(systemName: label == "admin.notification.field.title" ? "textformat" : "text.alignleft")
-                .font(.system(size: 16))
-                .foregroundStyle(AppColors.boltGreen)
-                .frame(width: 24)
-                .padding(.top, alignTop ? 4 : 0)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(label)
+    private var targetCard: some View {
+        HStack(spacing: 12) {
+            iconBadge(systemName: "person.2.fill")
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Doelgroep")
                     .font(AppFont.labelSmall())
                     .foregroundStyle(AppColors.gray500)
-                content()
+
+                HStack(spacing: 8) {
+                    ForEach(NotificationTarget.allCases) { t in
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                target = t
+                            }
+                        } label: {
+                            Text(t.label)
+                                .font(AppFont.labelMedium())
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 8)
+                                .frame(maxWidth: .infinity)
+                                .background(
+                                    target == t
+                                        ? AppColors.boltGreen
+                                        : AppColors.gray100
+                                )
+                                .foregroundStyle(
+                                    target == t ? Color.white : AppColors.gray700
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: AppRadius.r20))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(16)
         .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.r16))
+        .shadow(color: .black.opacity(0.04), radius: 8, x: 0, y: 2)
     }
 
-    private var sendButton: some View {
-        TRAPrimaryButton(
-            title: "admin.notification.send",
-            isLoading: isSending,
-            isDisabled: title.trimmingCharacters(in: .whitespaces).isEmpty ||
-                        messageBody.trimmingCharacters(in: .whitespaces).isEmpty
-        ) {
-            Task { await sendNotification() }
+    // MARK: - Preview Card
+
+    private var previewCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 5) {
+                Image(systemName: "eye.fill")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(AppColors.boltGreen)
+                Text("Voorbeeld")
+                    .font(AppFont.labelSmall())
+                    .foregroundStyle(AppColors.boltGreen)
+            }
+
+            HStack(alignment: .top, spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: AppRadius.r8)
+                        .fill(AppColors.boltGreen)
+                        .frame(width: 36, height: 36)
+                    Image(systemName: "bell.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.white)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack {
+                        Text("True Road Adventures")
+                            .font(AppFont.labelSmall())
+                            .foregroundStyle(AppColors.gray500)
+                        Spacer()
+                        Text("nu")
+                            .font(AppFont.labelSmall())
+                            .foregroundStyle(AppColors.gray300)
+                    }
+                    Text(title.trimmingCharacters(in: .whitespaces))
+                        .font(AppFont.labelMedium())
+                        .foregroundStyle(AppColors.gray900)
+                        .lineLimit(1)
+                    Text(messageBody.trimmingCharacters(in: .whitespaces))
+                        .font(AppFont.bodySmall())
+                        .foregroundStyle(AppColors.gray500)
+                        .lineLimit(2)
+                }
+            }
+            .padding(12)
+            .background(AppColors.gray50)
+            .clipShape(RoundedRectangle(cornerRadius: AppRadius.r12))
+        }
+        .padding(16)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.r16))
+        .shadow(color: .black.opacity(0.04), radius: 8, x: 0, y: 2)
+    }
+
+    // MARK: - Shared Components
+
+    @ViewBuilder
+    private func iconBadge(systemName: String) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: AppRadius.r8)
+                .fill(AppColors.boltGreenLight)
+                .frame(width: 36, height: 36)
+            Image(systemName: systemName)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(AppColors.boltGreen)
         }
     }
+
+    // MARK: - Send Button
+
+    private var sendButton: some View {
+        Button {
+            Task { await sendNotification() }
+        } label: {
+            ZStack {
+                if isSending {
+                    ProgressView()
+                        .tint(.white)
+                        .scaleEffect(0.9)
+                } else {
+                    HStack(spacing: 8) {
+                        Image(systemName: "paperplane.fill")
+                            .font(.system(size: 14, weight: .semibold))
+                        Text("Melding versturen")
+                            .font(AppFont.labelLarge())
+                    }
+                    .foregroundStyle(.white)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 54)
+            .background(
+                isFormValid
+                    ? AppColors.boltGreen
+                    : AppColors.boltGreen.opacity(0.4)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: AppRadius.r16))
+            .shadow(
+                color: AppColors.boltGreen.opacity(isFormValid ? 0.3 : 0),
+                radius: 4, x: 0, y: 4
+            )
+        }
+        .disabled(!isFormValid || isSending)
+        .buttonStyle(.plain)
+    }
+
+    private var isFormValid: Bool {
+        !title.trimmingCharacters(in: .whitespaces).isEmpty &&
+        !messageBody.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
+    // MARK: - Network
 
     private func sendNotification() async {
         isSending = true

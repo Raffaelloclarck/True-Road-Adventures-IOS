@@ -6,8 +6,19 @@ struct DriverProfileView: View {
     @EnvironmentObject private var rideService: RideService
     @State private var showDeleteAlert = false
     @State private var navigateTo: DriverProfileDestination? = nil
+    @State private var driverRatings: [Rating] = []
 
     private var liveUser: User { authService.state.user ?? currentUser }
+
+    private var effectiveCompletedRides: Int {
+        let fromHistory = rideService.driverHistory.filter { $0.status == .completed }.count
+        return max(fromHistory, liveUser.completedRides)
+    }
+
+    private var effectiveRating: Double? {
+        guard !driverRatings.isEmpty else { return liveUser.rating }
+        return Double(driverRatings.map(\.score).reduce(0, +)) / Double(driverRatings.count)
+    }
 
     private var acceptanceRatio: String {
         let history = rideService.driverHistory
@@ -32,6 +43,9 @@ struct DriverProfileView: View {
             .navigationBarHidden(true)
             .navigationDestination(item: $navigateTo) { dest in
                 driverProfileDestination(dest)
+            }
+            .task {
+                driverRatings = await authService.fetchDriverRatings()
             }
         }
         .alert(Text("driver.profile.delete.title"), isPresented: $showDeleteAlert) {
@@ -79,12 +93,12 @@ struct DriverProfileView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "star.fill").font(.system(size: 11))
                             .foregroundStyle(AppColors.starYellow)
-                        if let rating = liveUser.rating {
+                        if let rating = effectiveRating {
                             Text(String(format: "%.1f", rating))
                                 .font(AppFont.labelSmall()).foregroundStyle(.white)
                             Text("·").foregroundStyle(.white.opacity(0.5))
                         }
-                        Text("\(liveUser.completedRides) " + String(localized: "tab.rides").lowercased())
+                        Text("\(effectiveCompletedRides) " + String(localized: "tab.rides").lowercased())
                             .font(AppFont.labelSmall()).foregroundStyle(.white.opacity(0.75))
                     }
                 }
@@ -95,10 +109,10 @@ struct DriverProfileView: View {
 
     private var statsRow: some View {
         HStack(spacing: 0) {
-            statItem(value: "\(liveUser.completedRides)", label: "driver.profile.stat.rides")
+            statItem(value: "\(effectiveCompletedRides)", label: "driver.profile.stat.rides")
             Divider().frame(height: 40)
             statItem(
-                value: liveUser.rating.map { String(format: "%.1f★", $0) } ?? "–",
+                value: effectiveRating.map { String(format: "%.1f★", $0) } ?? "–",
                 label: "driver.profile.stat.rating"
             )
             Divider().frame(height: 40)
@@ -120,9 +134,10 @@ struct DriverProfileView: View {
     private var profileSections: some View {
         VStack(spacing: 16) {
             driverSection(title: "driver.profile.section.account", items: [
-                (.personalInfo,  "person.fill",       "driver.profile.row.personal"),
-                (.vehicle,       "car.fill",           "driver.profile.row.vehicle"),
-                (.documents,     "doc.fill",           "driver.profile.row.documents"),
+                (.personalInfo,  "person.fill",                  "driver.profile.row.personal"),
+                (.vehicle,       "car.fill",                     "driver.profile.row.vehicle"),
+                (.availability,  "clock.badge.checkmark.fill",   "driver.profile.row.availability"),
+                (.documents,     "doc.fill",                     "driver.profile.row.documents"),
             ])
             driverSection(title: "driver.profile.section.activity", items: [
                 (.reviews,       "star.fill",          "driver.profile.row.reviews"),
@@ -194,6 +209,7 @@ struct DriverProfileView: View {
         switch dest {
         case .personalInfo: DriverPersonalInfoView()
         case .vehicle:      DriverVehicleView()
+        case .availability: DriverAvailabilityView(user: liveUser)
         case .documents:    DriverDocumentsView()
         case .reviews:      DriverReviewsView()
         case .earnings:     DriverEarningsView()
@@ -204,7 +220,7 @@ struct DriverProfileView: View {
 }
 
 enum DriverProfileDestination: Hashable {
-    case personalInfo, vehicle, documents, reviews, earnings, support, about
+    case personalInfo, vehicle, availability, documents, reviews, earnings, support, about
 }
 
 #Preview {

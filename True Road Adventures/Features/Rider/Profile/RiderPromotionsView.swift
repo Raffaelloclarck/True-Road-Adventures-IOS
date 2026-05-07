@@ -3,10 +3,15 @@ import SwiftUI
 struct RiderPromotionsView: View {
     let currentUser: User
 
+    @EnvironmentObject private var discountCodeService: DiscountCodeService
+    @EnvironmentObject private var authService: AuthService
+
     @State private var promoCode = ""
     @State private var isApplying = false
     @State private var resultMessage: PromoResult? = nil
     @State private var showCopied = false
+    @State private var activeCodes: [DiscountCode] = []
+    @State private var isLoadingCodes = false
 
     struct PromoResult: Identifiable {
         let id = UUID()
@@ -27,6 +32,9 @@ struct RiderPromotionsView: View {
         .background(AppColors.backgroundLight)
         .navigationTitle("Promoties")
         .navigationBarTitleDisplayMode(.inline)
+        .task {
+            await loadActiveCodes()
+        }
         .alert(
             resultMessage?.isSuccess == true ? "Gelukt!" : "Niet geldig",
             isPresented: Binding(get: { resultMessage != nil }, set: { if !$0 { resultMessage = nil } })
@@ -53,12 +61,12 @@ struct RiderPromotionsView: View {
                 Text("Beschikbaar tegoed")
                     .font(AppFont.labelMedium())
                     .foregroundStyle(AppColors.gray500)
-                Text("SRD \(currentUser.rideCredits, specifier: "%.2f")")
+                Text("SRD \((authService.state.user?.rideCredits ?? currentUser.rideCredits), specifier: "%.2f")")
                     .font(AppFont.titleLarge())
                     .foregroundStyle(AppColors.gray900)
             }
             Spacer()
-            if currentUser.rideCredits > 0 {
+            if (authService.state.user?.rideCredits ?? currentUser.rideCredits) > 0 {
                 Text("Actief")
                     .font(AppFont.labelSmall())
                     .foregroundStyle(AppColors.boltGreen)
@@ -161,18 +169,30 @@ struct RiderPromotionsView: View {
                 .font(AppFont.titleSmall())
                 .foregroundStyle(AppColors.gray900)
 
-            promoCard(
-                icon: "gift.fill",
-                title: "Welkomstkorting",
-                subtitle: "SRD 5 korting op je eerste rit",
-                expiry: "Verloopt: 31 dec 2025"
-            )
-            promoCard(
-                icon: "person.2.fill",
-                title: "Referralbonus",
-                subtitle: "Nodig vrienden uit voor SRD 10 tegoed per persoon",
-                expiry: "Geen vervaldatum"
-            )
+            if isLoadingCodes {
+                HStack {
+                    Spacer()
+                    ProgressView()
+                    Spacer()
+                }
+                .padding(.vertical, 12)
+            } else if activeCodes.isEmpty {
+                Text("Geen actieve promoties op dit moment.")
+                    .font(AppFont.bodySmall())
+                    .foregroundStyle(AppColors.gray500)
+                    .padding(.vertical, 8)
+            } else {
+                ForEach(activeCodes) { code in
+                    promoCard(
+                        icon: code.type == .percentage ? "percent" : "tag.fill",
+                        title: code.code,
+                        subtitle: code.type == .percentage
+                            ? "\(Int(code.value))% korting op je rit"
+                            : String(format: "SRD %.0f korting op je rit", code.value),
+                        expiry: "Verloopt: \(code.expiresAt.formatted(date: .abbreviated, time: .omitted))"
+                    )
+                }
+            }
         }
     }
 
@@ -198,19 +218,49 @@ struct RiderPromotionsView: View {
 
     // MARK: - Promo code logic
 
+    private func loadActiveCodes() async {
+        isLoadingCodes = true
+        do {
+            activeCodes = try await discountCodeService.fetchActiveCodesForRider()
+        } catch {
+            activeCodes = []
+        }
+        isLoadingCodes = false
+    }
+
     private func applyPromoCode() {
         let code = promoCode.trimmingCharacters(in: .whitespaces).uppercased()
         guard !code.isEmpty else { return }
         isApplying = true
         Task {
-            try? await Task.sleep(nanoseconds: 800_000_000)
-            await MainActor.run {
-                isApplying = false
-                promoCode = ""
-                if ["WELCOME5", "TRUEROADNL", "NEWUSER"].contains(code) {
-                    resultMessage = PromoResult(message: "Code '\(code)' is toegepast! Korting wordt verrekend bij je volgende rit.", isSuccess: true)
-                } else {
-                    resultMessage = PromoResult(message: "De code '\(code)' is niet geldig of al gebruikt.", isSuccess: false)
+            do {
+                let result = try await discountCodeService.redeemCode(code, context: .credits, fare: nil)
+                await authService.refreshUser()
+                await MainActor.run {
+                    isApplying = false
+                    promoCode = ""
+                    let creditedAmount = result.discountAmount > 0 ? result.discountAmount : result.value
+                    let label = String(format: "SRD %.0f", creditedAmount)
+                    resultMessage = PromoResult(
+                        message: "Code '\(code)' is toegepast! \(label) is toegevoegd aan je tegoed.",
+                        isSuccess: true
+                    )
+                }
+            } catch {
+                await MainActor.run {
+                    isApplying = false
+                    let message: String
+                    let raw = error.localizedDescription
+                    if raw.contains("discount.code.already_used") {
+                        message = "Je hebt deze code al eerder gebruikt."
+                    } else if raw.contains("discount.code.expired") {
+                        message = "Deze kortingscode is verlopen."
+                    } else if raw.contains("discount.code.max_uses_reached") {
+                        message = "Deze kortingscode heeft het maximale gebruik bereikt."
+                    } else {
+                        message = "De code '\(code)' is niet geldig of al gebruikt."
+                    }
+                    resultMessage = PromoResult(message: message, isSuccess: false)
                 }
             }
         }
@@ -222,5 +272,7 @@ struct RiderPromotionsView: View {
         RiderPromotionsView(
             currentUser: User(id: "demo", email: "demo@test.nl", displayName: "Demo", role: .customer, referralCode: "TRA-AB12CD", rideCredits: 25.0)
         )
+        .environmentObject(DiscountCodeService())
+        .environmentObject(AuthService(repository: InMemoryAuthRepository()))
     }
 }

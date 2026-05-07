@@ -14,9 +14,15 @@ service cloud.firestore {
       return key in data ? data[key] : fallback;
     }
 
+    function callerRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
     function isAdmin() {
-      return isSignedIn() &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN';
+      return isSignedIn() && (
+        callerRole() == 'ADMIN' ||
+        callerRole() == 'admin'
+      );
     }
 
     // ─── rides ────────────────────────────────────────────────────────────────
@@ -136,6 +142,17 @@ service cloud.firestore {
       allow create:        if isSignedIn() &&
                               request.resource.data.fromUserId == request.auth.uid;
       allow update, delete: if false;
+    }
+
+    // ─── discountCodes ───────────────────────────────────────────────────────
+    //
+    // Riders and drivers may read codes so the Promotions tab can display
+    // active promotions. Write operations (create, update, delete) and the
+    // server-side usage increments remain admin / Cloud Function only.
+
+    match /discountCodes/{codeId} {
+      allow read:                  if isSignedIn();
+      allow create, update, delete: if isAdmin();
     }
   }
 }

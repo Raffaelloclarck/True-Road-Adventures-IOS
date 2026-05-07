@@ -139,6 +139,9 @@ struct PermissionsOnboardingView: View {
         let status = locationService.authorizationStatus
         if status == .authorizedWhenInUse || status == .authorizedAlways {
             locationGranted = true
+            // Permission was already granted (e.g. returning user). Start updates
+            // immediately so GPS is ready before the home screen appears.
+            locationService.startUpdating()
             currentStep = 1
         }
 

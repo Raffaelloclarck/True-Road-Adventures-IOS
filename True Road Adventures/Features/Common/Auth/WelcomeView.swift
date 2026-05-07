@@ -86,13 +86,20 @@ struct WelcomeView: View {
                 .padding(.horizontal, 4)
 
             TRASecondaryButton(title: "welcome.cta.google", icon: "globe") {
+                authService.setError(nil)
                 Task { await signInWithGoogle(authService: authService) }
             }
             TRASecondaryButton(title: "welcome.cta.apple", icon: "apple.logo") {
+                authService.setError(nil)
                 handleAppleSignIn()
             }
             TRASecondaryButton(title: "welcome.cta.email", icon: "envelope") {
+                authService.setError(nil)
                 path.append(AuthDestination.login)
+            }
+
+            if let error = authService.state.error {
+                errorBanner(error)
             }
 
             legalText
@@ -137,6 +144,20 @@ struct WelcomeView: View {
             .foregroundStyle(AppColors.gray500)
             .font(AppFont.bodySmall())
             .multilineTextAlignment(.center)
+    }
+
+    private func errorBanner(_ message: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "exclamationmark.circle.fill")
+                .foregroundStyle(AppColors.errorRed)
+            Text(message)
+                .font(AppFont.bodyMedium())
+                .foregroundStyle(AppColors.errorRed)
+            Spacer()
+        }
+        .padding(12)
+        .background(AppColors.errorRed.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.r12))
     }
 
     private func handleAppleSignIn() {

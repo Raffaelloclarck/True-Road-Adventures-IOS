@@ -20,37 +20,10 @@ actor FirebaseAuthRepository: AuthRepository {
             .collection("users").document(userId).getDocument().data() else {
             return nil
         }
-        let roleStr = data["role"] as? String ?? ""
-        let role: UserRole
-        switch roleStr.uppercased() {
-        case "DRIVER": role = .driver
-        case "ADMIN":  role = .admin
-        default:       role = defaultRole
-        }
-        let photoURL = (data["photoURL"] as? String).flatMap { URL(string: $0) }
-        let isApproved = role == .driver ? (data["isApproved"] as? Bool ?? false) : true
-        return User(
+        return Self.makeUserFromFirestore(
             id: userId,
-            displayName: data["displayName"] as? String,
-            phoneNumber: data["phoneNumber"] as? String,
-            photoURL: photoURL,
-            role: role,
-            isDriverOnline: data["isOnline"] as? Bool ?? false,
-            vehicle: VehicleInfo(
-                vehicleType: data["vehicleType"] as? String,
-                licensePlate: data["licensePlate"] as? String
-            ),
-            preferences: UserPreferences(
-                preferredLanguage: data["preferredLanguage"] as? String,
-                marketingOptIn: data["marketingOptIn"] as? Bool
-            ),
-            rating: data["rating"] as? Double,
-            completedRides: data["completedRides"] as? Int ?? 0,
-            hasCompletedOnboarding: data["hasCompletedOnboarding"] as? Bool ?? false,
-            isApproved: isApproved,
-            referralCode: data["referralCode"] as? String ?? "",
-            rideCredits: data["rideCredits"] as? Double ?? 0,
-            referredBy: data["referredBy"] as? String
+            data: data,
+            defaultRoleWhenUnknown: defaultRole
         )
         #else
         return nil
@@ -67,6 +40,18 @@ actor FirebaseAuthRepository: AuthRepository {
         return await mapUser(firebaseUser)
     }
 
+    func refreshCurrentUser() async -> User? {
+        guard let firebaseUser = Auth.auth().currentUser else { return nil }
+        cachedUser = nil
+        // Use a generous 30-second timeout for background refresh
+        let fetched = await fetchUserFromFirestoreWithTimeout(firebaseUser, timeout: 30)
+        if let fetched {
+            cachedUser = fetched
+            return fetched
+        }
+        return await mapUser(firebaseUser)
+    }
+
     // MARK: - Firestore helpers
 
     private func fetchUserFromFirestore(_ firebaseUser: FirebaseAuth.User) async -> User? {
@@ -75,46 +60,19 @@ actor FirebaseAuthRepository: AuthRepository {
             .collection("users").document(firebaseUser.uid).getDocument().data() else {
             return nil
         }
-        let roleStr = data["role"] as? String ?? ""
-        let role: UserRole
-        switch roleStr.uppercased() {
-        case "DRIVER": role = .driver
-        case "ADMIN":  role = .admin
-        default:
-            role = defaultRole
-            if roleStr.isEmpty {
-                print("[FirebaseAuthRepository] Warning: user \(firebaseUser.uid) has no 'role' field in Firestore — defaulting to \(defaultRole). Set role: \"DRIVER\" in the users collection for driver accounts.")
-            }
+        let roleStr = (data["role"] as? String ?? "")
+        if roleStr.isEmpty {
+            print("[FirebaseAuthRepository] Warning: user \(firebaseUser.uid) has no 'role' field in Firestore — defaulting to \(defaultRole). Set role: \"DRIVER\" in the users collection for driver accounts.")
         }
-        let isOnline = data["isOnline"] as? Bool ?? false
-        let home = data["homeAddress"] as? String
-        let work = data["workAddress"] as? String
-        let recentAddresses = data["recentAddresses"] as? [String] ?? []
-        let preferredLanguage = data["preferredLanguage"] as? String
-        let marketingOptIn = data["marketingOptIn"] as? Bool
-        let hasCompletedOnboarding = data["hasCompletedOnboarding"] as? Bool ?? false
-        let isApproved = role == .driver ? (data["isApproved"] as? Bool ?? false) : true
-        let referralCode = data["referralCode"] as? String ?? ""
-        let rideCredits = data["rideCredits"] as? Double ?? 0
-        let referredBy = data["referredBy"] as? String
-        return await MainActor.run {
-            User(
-                id: firebaseUser.uid,
-                email: firebaseUser.email,
-                displayName: (data["displayName"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? firebaseUser.displayName,
-                phoneNumber: firebaseUser.phoneNumber,
-                photoURL: firebaseUser.photoURL,
-                role: role,
-                isDriverOnline: isOnline,
-                savedPlaces: SavedPlaces(home: home, work: work, recentAddresses: recentAddresses),
-                preferences: UserPreferences(preferredLanguage: preferredLanguage, marketingOptIn: marketingOptIn),
-                hasCompletedOnboarding: hasCompletedOnboarding,
-                isApproved: isApproved,
-                referralCode: referralCode,
-                rideCredits: rideCredits,
-                referredBy: referredBy
-            )
-        }
+        return Self.makeUserFromFirestore(
+            id: firebaseUser.uid,
+            data: data,
+            defaultRoleWhenUnknown: defaultRole,
+            emailFallback: firebaseUser.email,
+            displayNameFallback: firebaseUser.displayName,
+            phoneFallback: firebaseUser.phoneNumber,
+            photoFallback: firebaseUser.photoURL
+        )
         #else
         return nil
         #endif
@@ -129,7 +87,9 @@ actor FirebaseAuthRepository: AuthRepository {
             var data: [String: Any] = [
                 "email": firebaseUser.email ?? "",
                 "displayName": firebaseUser.displayName ?? "",
-                "role": role.rawValue.uppercased(),
+                "role": role == .admin ? "ADMIN" : "",
+                "isDriver": role == .driver,
+                "isCustomer": role == .customer,
                 "isOnline": false,
                 "isApproved": role != .driver,
                 "createdAt": FieldValue.serverTimestamp(),
@@ -144,14 +104,34 @@ actor FirebaseAuthRepository: AuthRepository {
             }
             try? await ref.setData(data)
         } else {
-            // Only sync profile fields — never overwrite role set in Firestore
+            let existingData = existing?.data() ?? [:]
+            // Only sync profile fields — never overwrite role or revoke existing permissions
             var updateData: [String: Any] = [
                 "email": firebaseUser.email ?? "",
                 "displayName": firebaseUser.displayName ?? "",
                 "updatedAt": FieldValue.serverTimestamp(),
             ]
+            // Backfill isCustomer/isDriver for legacy users who registered before these fields existed
+            if existingData["isCustomer"] == nil && existingData["isDriver"] == nil {
+                let legacyRole = (existingData["role"] as? String ?? "").uppercased()
+                updateData["isDriver"] = legacyRole == "DRIVER"
+                updateData["isCustomer"] = legacyRole == "CUSTOMER"
+            }
+            // Customer app: mark this account as having a customer role
+            if defaultRole == .customer {
+                updateData["isCustomer"] = true
+            }
+            // Driver app: only set isDriver if the account already has driver status
+            // (new driver registrations go through applyAsDriver)
+            if defaultRole == .driver {
+                let alreadyDriver = (existingData["isDriver"] as? Bool ?? false)
+                    || (existingData["role"] as? String ?? "").uppercased() == "DRIVER"
+                if alreadyDriver {
+                    updateData["isDriver"] = true
+                }
+            }
             // Backfill referralCode for legacy users who registered before this field existed
-            let existingCode = existing?.data()?["referralCode"] as? String ?? ""
+            let existingCode = existingData["referralCode"] as? String ?? ""
             if existingCode.isEmpty {
                 updateData["referralCode"] = "TRA-" + firebaseUser.uid.prefix(6).uppercased()
             }
@@ -294,6 +274,26 @@ actor FirebaseAuthRepository: AuthRepository {
         return user
     }
 
+    func saveAvailability(slots: [String: AvailabilitySlot], enabled: Bool) async throws -> User {
+        guard let firebaseUser = Auth.auth().currentUser else {
+            throw AuthError.notAuthenticated
+        }
+        #if canImport(FirebaseFirestore)
+        let slotsData: [String: [String: Any]] = slots.mapValues { slot in
+            ["isEnabled": slot.isEnabled, "startTime": slot.startTime, "endTime": slot.endTime]
+        }
+        try await Firestore.firestore().collection("users").document(firebaseUser.uid)
+            .updateData(["availability": slotsData, "availabilityEnabled": enabled])
+        #endif
+        guard var user = try await cachedOrCurrentUser() else {
+            throw AuthError.notAuthenticated
+        }
+        user.weeklyAvailability  = slots
+        user.availabilityEnabled = enabled
+        cachedUser = user
+        return user
+    }
+
     func updateVehicleInfo(vehicle: VehicleInfo) async throws -> User {
         guard let firebaseUser = Auth.auth().currentUser,
               var user = try await cachedOrCurrentUser() else {
@@ -432,6 +432,35 @@ actor FirebaseAuthRepository: AuthRepository {
         #endif
     }
 
+    func approvedDriversDirectory() async -> AsyncStream<[User]> {
+        #if canImport(FirebaseFirestore)
+        let (stream, continuation) = AsyncStream.makeStream(of: [User].self)
+        let query = Firestore.firestore().collection("users")
+            .whereField("role", isEqualTo: "DRIVER")
+            .whereField("isApproved", isEqualTo: true)
+        let listener = query.addSnapshotListener { snapshot, _ in
+            var users: [User] = snapshot?.documents.map { doc in
+                Self.makeUserFromFirestore(
+                    id: doc.documentID,
+                    data: doc.data(),
+                    defaultRoleWhenUnknown: .driver
+                )
+            } ?? []
+            users.sort { a, b in
+                if a.isDriverOnline != b.isDriverOnline { return a.isDriverOnline && !b.isDriverOnline }
+                let n0 = a.displayName ?? a.email ?? a.id
+                let n1 = b.displayName ?? b.email ?? b.id
+                return n0.localizedCaseInsensitiveCompare(n1) == .orderedAscending
+            }
+            continuation.yield(users)
+        }
+        continuation.onTermination = { @Sendable _ in listener.remove() }
+        return stream
+        #else
+        return AsyncStream { $0.finish() }
+        #endif
+    }
+
     func approveDriver(userId: String) async throws {
         #if canImport(FirebaseFirestore)
         try await Firestore.firestore().collection("users").document(userId)
@@ -451,6 +480,7 @@ actor FirebaseAuthRepository: AuthRepository {
         try await Firestore.firestore().collection("users").document(uid)
             .updateData([
                 "role": "DRIVER",
+                "isDriver": true,
                 "isApproved": false,
                 "updatedAt": FieldValue.serverTimestamp()
             ])
@@ -469,8 +499,17 @@ actor FirebaseAuthRepository: AuthRepository {
         let idToken = try await firebaseUser.getIDToken()
         let session = AuthSession(accessToken: idToken, refreshToken: nil, userId: firebaseUser.uid)
         let resolvedRole = role ?? defaultRole
-        await upsertFirestoreUser(firebaseUser, role: resolvedRole, referredBy: referredBy)
-        let fetchedUser = await fetchUserFromFirestore(firebaseUser)
+
+        // Fire Firestore write in background — never block sign-in waiting for network.
+        // ref.getDocument() hangs indefinitely when Firestore is unreachable; making
+        // this fire-and-forget ensures sign-in always completes promptly.
+        Task { await upsertFirestoreUser(firebaseUser, role: resolvedRole, referredBy: referredBy) }
+
+        // Fetch user with a 5-second timeout. Firestore does not support cooperative
+        // Swift-task cancellation, so we race two Tasks to a single-fire continuation.
+        // If Firestore is slow, falls back to Firebase Auth data via mapUser.
+        let fetchedUser = await fetchUserFromFirestoreWithTimeout(firebaseUser, timeout: 5)
+
         var user: User
         if let fetchedUser {
             user = fetchedUser
@@ -484,6 +523,31 @@ actor FirebaseAuthRepository: AuthRepository {
         return (session, user)
     }
 
+    /// Races a Firestore fetch against a wall-clock timeout.
+    /// Returns `nil` (falls back to mapUser) if Firestore doesn't respond in time.
+    /// Uses `withCheckedContinuation` + `NSLock` because Firestore's `getDocument()`
+    /// does not cooperate with Swift task cancellation.
+    private func fetchUserFromFirestoreWithTimeout(_ firebaseUser: FirebaseAuth.User, timeout: Double) async -> User? {
+        return await withCheckedContinuation { continuation in
+            let lock = NSLock()
+            var resumed = false
+
+            func resumeOnce(_ value: User?) {
+                lock.lock()
+                defer { lock.unlock() }
+                guard !resumed else { return }
+                resumed = true
+                continuation.resume(returning: value)
+            }
+
+            Task { resumeOnce(await self.fetchUserFromFirestore(firebaseUser)) }
+            Task {
+                try? await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+                resumeOnce(nil)
+            }
+        }
+    }
+
     private func mapUser(_ firebaseUser: FirebaseAuth.User, role: UserRole? = nil) async -> User {
         await MainActor.run {
             User(
@@ -495,6 +559,94 @@ actor FirebaseAuthRepository: AuthRepository {
                 role: role ?? defaultRole
             )
         }
+    }
+
+    nonisolated private static func decodeAvailability(_ raw: Any?) -> [String: AvailabilitySlot] {
+        guard let dict = raw as? [String: [String: Any]] else { return [:] }
+        var result: [String: AvailabilitySlot] = [:]
+        for (day, value) in dict {
+            result[day] = AvailabilitySlot(
+                isEnabled: value["isEnabled"] as? Bool   ?? true,
+                startTime: value["startTime"] as? String ?? "08:00",
+                endTime:   value["endTime"]   as? String ?? "17:00"
+            )
+        }
+        return result
+    }
+
+    /// Maps a Firestore `users` document to `User`. Used for reads and admin directory listener.
+    nonisolated private static func makeUserFromFirestore(
+        id: String,
+        data: [String: Any],
+        defaultRoleWhenUnknown: UserRole,
+        emailFallback: String? = nil,
+        displayNameFallback: String? = nil,
+        phoneFallback: String? = nil,
+        photoFallback: URL? = nil
+    ) -> User {
+        let roleStr = (data["role"] as? String ?? "").uppercased()
+        let isDriverField = data["isDriver"] as? Bool
+        let isCustomerField = data["isCustomer"] as? Bool
+        let role: UserRole
+        switch roleStr {
+        case "ADMIN": role = .admin
+        default:
+            // Prefer the new boolean fields; fall back to legacy role string, then appMode default
+            if let isDriver = isDriverField, isDriver && defaultRoleWhenUnknown == .driver {
+                role = .driver
+            } else if let isCustomer = isCustomerField, isCustomer && defaultRoleWhenUnknown == .customer {
+                role = .customer
+            } else if roleStr == "DRIVER" {
+                role = defaultRoleWhenUnknown == .driver ? .driver : defaultRoleWhenUnknown
+            } else {
+                role = defaultRoleWhenUnknown
+            }
+        }
+        let isOnline = data["isOnline"] as? Bool ?? false
+        let home = data["homeAddress"] as? String
+        let work = data["workAddress"] as? String
+        let recentAddresses = data["recentAddresses"] as? [String] ?? []
+        let preferredLanguage = data["preferredLanguage"] as? String
+        let marketingOptIn = data["marketingOptIn"] as? Bool
+        let hasCompletedOnboarding = data["hasCompletedOnboarding"] as? Bool ?? false
+        let isDriverAccount = (isDriverField ?? (roleStr == "DRIVER"))
+        let isApproved = isDriverAccount ? (data["isApproved"] as? Bool ?? false) : true
+        let referralCode = data["referralCode"] as? String ?? ""
+        let rideCredits = data["rideCredits"] as? Double ?? 0
+        let referredBy = data["referredBy"] as? String
+        let photoURLFromFirestore = (data["photoURL"] as? String).flatMap { URL(string: $0) }
+        let availabilityEnabled = data["availabilityEnabled"] as? Bool ?? false
+        let weeklyAvailability = Self.decodeAvailability(data["availability"])
+        let vehicle = VehicleInfo(
+            vehicleType: data["vehicleType"] as? String,
+            licensePlate: data["licensePlate"] as? String
+        )
+        let rating = data["rating"] as? Double
+        let completedRides = data["completedRides"] as? Int ?? 0
+        let emailFromData = (data["email"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        let displayNameFromData = (data["displayName"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        let phoneFromData = (data["phoneNumber"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        return User(
+            id: id,
+            email: emailFromData ?? emailFallback,
+            displayName: displayNameFromData ?? displayNameFallback,
+            phoneNumber: phoneFromData ?? phoneFallback,
+            photoURL: photoURLFromFirestore ?? photoFallback,
+            role: role,
+            isDriverOnline: isOnline,
+            vehicle: vehicle,
+            savedPlaces: SavedPlaces(home: home, work: work, recentAddresses: recentAddresses),
+            preferences: UserPreferences(preferredLanguage: preferredLanguage, marketingOptIn: marketingOptIn),
+            rating: rating,
+            completedRides: completedRides,
+            hasCompletedOnboarding: hasCompletedOnboarding,
+            isApproved: isApproved,
+            referralCode: referralCode,
+            rideCredits: rideCredits,
+            referredBy: referredBy,
+            weeklyAvailability: weeklyAvailability,
+            availabilityEnabled: availabilityEnabled
+        )
     }
 
     private func cachedOrCurrentUser() async throws -> User? {

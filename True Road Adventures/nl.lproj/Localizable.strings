@@ -95,9 +95,6 @@
 "rider.home.saved.work" = "Werk";
 "rider.home.saved.work.empty" = "Voeg je werkadres toe";
 "rider.home.service.standard" = "Standaard";
-"rider.home.service.comfort" = "Comfort";
-"rider.home.service.xl" = "XL";
-"rider.home.service.green" = "Groen";
 "rider.home.active_ride" = "Actieve rit";
 "rider.home.destination" = "Bestemming";
 "rider.home.eta" = "ETA: %@ min";
@@ -316,6 +313,7 @@
 "chat.title" = "Chat";
 "chat.ride_prefix" = "Rit #%@";
 "chat.message.placeholder" = "Bericht...";
+"chat.counterpart_no_phone" = "Er is geen telefoonnummer voor deze persoon, of bellen is op dit apparaat niet mogelijk.";
 
 /* ===== SUPPORT ===== */
 "support.title" = "Hulp & Support";
@@ -526,6 +524,7 @@
 "action.share" = "Deel";
 "action.cancel_short" = "Annuleer";
 "action.chat" = "Chat";
+"action.ok" = "OK";
 
 /* ===== ROUTE LABELS ===== */
 "route.pickup" = "Ophalen";
@@ -556,6 +555,8 @@
 "ride.cancel.message" = "Weet je zeker dat je deze rit wilt annuleren?";
 "ride.cancel.confirm" = "Annuleren";
 "ride.cancel.back" = "Terug";
+"ride.cancel.error.title" = "Annuleren niet mogelijk";
+"ride.cancel.error.driver_accepted" = "Deze rit kan niet meer worden geannuleerd omdat een chauffeur de rit al heeft geaccepteerd.";
 "ride.rate.button" = "Beoordeel rit";
 "ride.rate.submitted" = "Beoordeling verstuurd";
 "ride.rate.how_was_ride" = "Hoe was je rit?";
@@ -577,7 +578,7 @@
 "active.ride.waiting" = "Wacht: %@";
 "active.ride.wait_rate" = "SRD 3.33/min wachten";
 "active.ride.stop_wait" = "Stop wacht";
-"active.ride.start_wait" = "Wacht";
+"active.ride.start_wait" = "Wacht starten";
 "active.ride.arrived_customer" = "Ik ben bij de klant";
 "active.ride.passenger_picked_up" = "Passagier opgehaald";
 "active.ride.complete_ride" = "Rit voltooien";
@@ -626,9 +627,6 @@
 "home.active_ride" = "Actieve rit";
 "home.eta" = "ETA: %d min";
 "home.service.standard" = "Standaard";
-"home.service.comfort" = "Comfort";
-"home.service.xl" = "XL";
-"home.service.green" = "Groen";
 
 /* ===== DRIVER HOME ===== */
 "driver.home.online" = "Online";
@@ -654,9 +652,24 @@
 "driver.pending.title" = "Account wordt beoordeeld";
 "driver.pending.body" = "Je aanvraag wordt bekeken door een beheerder. Je ontvangt bericht zodra je account is goedgekeurd.";
 
+/* ===== KORTINGSCODES ===== */
+"discount.code.title" = "Kortingscode";
+"discount.code.placeholder" = "Voer code in (bijv. ZOMER20)";
+"discount.code.apply" = "Toepassen";
+"discount.code.applied" = "Code %@ toegepast";
+"discount.code.invalid" = "Deze kortingscode is niet geldig.";
+"discount.code.expired" = "Deze kortingscode is verlopen.";
+"discount.code.max_uses_reached" = "Deze kortingscode heeft het maximale aantal gebruik bereikt.";
+"discount.code.already_used" = "Je hebt deze kortingscode al gebruikt.";
+"discount.code.min_fare" = "Deze kortingscode vereist een hogere minimale ritprijs.";
+"discount.code.profile.subtitle" = "Wissel een code in voor rittegoed";
+"discount.code.credits_added" = "SRD %.0f is toegevoegd aan je rittegoed.";
+
 /* ===== ADMIN ===== */
 "admin.tab.rides" = "Ritten";
 "admin.tab.drivers" = "Chauffeurs";
+"admin.tab.discounts" = "Kortingen";
+"admin.tab.notifications" = "Meldingen";
 "admin.tab.profile" = "Profiel";
 "admin.rides.title" = "Alle ritten";
 "admin.drivers.title" = "Chauffeurs";
@@ -666,5 +679,32 @@
 "admin.drivers.approve" = "Goedkeuren";
 "admin.drivers.reject" = "Afwijzen";
 "admin.drivers.reject.confirm" = "Weet je zeker dat je deze chauffeur wilt afwijzen? Dit verwijdert hun account.";
+"admin.drivers.segment.pending" = "Goedkeuringen";
+"admin.drivers.segment.active" = "Actieve chauffeurs";
+"admin.drivers.active.empty" = "Geen goedgekeurde chauffeurs";
+"admin.drivers.active.empty.body" = "Goedgekeurde chauffeurs verschijnen hier met online status en roosters.";
+"admin.drivers.status.online" = "Online";
+"admin.drivers.status.offline" = "Offline";
+"admin.drivers.availability.on" = "Rooster aan";
+"admin.drivers.schedule.title" = "Weekrooster";
+"admin.drivers.schedule.disabled" = "Deze chauffeur heeft geen beschikbaarheidsrooster ingeschakeld.";
 "admin.profile.title" = "Profiel";
 "active.ride.your_passenger" = "Jouw passagier";
+
+/* ===== CHAUFFEUR BESCHIKBAARHEIDSROOSTER ===== */
+"driver.availability.title" = "Mijn rooster";
+"driver.availability.master_toggle" = "Automatisch rooster inschakelen";
+"driver.availability.master_subtitle" = "Ga automatisch online/offline op basis van jouw uren";
+"driver.availability.schedule_header" = "Wekelijkse beschikbaarheid";
+"driver.availability.day.monday" = "Maandag";
+"driver.availability.day.tuesday" = "Dinsdag";
+"driver.availability.day.wednesday" = "Woensdag";
+"driver.availability.day.thursday" = "Donderdag";
+"driver.availability.day.friday" = "Vrijdag";
+"driver.availability.day.saturday" = "Zaterdag";
+"driver.availability.day.sunday" = "Zondag";
+"driver.availability.start" = "Van";
+"driver.availability.end" = "Tot";
+"driver.availability.save" = "Rooster opslaan";
+"driver.availability.saved" = "Rooster opgeslagen";
+"driver.profile.row.availability" = "Mijn rooster";

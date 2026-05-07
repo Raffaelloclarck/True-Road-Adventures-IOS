@@ -1,40 +1,34 @@
 import SwiftUI
 
+private enum AdminDriversSegment: Int, CaseIterable {
+    case pending, active
+}
+
 struct AdminDriversView: View {
     @EnvironmentObject private var authService: AuthService
     @State private var driverToReject: User? = nil
+    @State private var segment: AdminDriversSegment = .pending
 
     var body: some View {
         NavigationStack {
-            Group {
-                if authService.pendingDrivers.isEmpty {
-                    VStack {
-                        Spacer()
-                        EmptyStateView(
-                            icon: "person.2.fill",
-                            title: String(localized: "admin.drivers.empty"),
-                            subtitle: String(localized: "admin.drivers.empty.body")
-                        )
-                        Spacer()
-                    }
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 12) {
-                            ForEach(authService.pendingDrivers) { driver in
-                                DriverApprovalCard(
-                                    driver: driver,
-                                    onApprove: {
-                                        Task { await authService.approveDriver(userId: driver.id) }
-                                    },
-                                    onReject: {
-                                        driverToReject = driver
-                                    }
-                                )
-                            }
-                        }
-                        .padding(16)
+            VStack(spacing: 0) {
+                Picker("", selection: $segment) {
+                    Text("admin.drivers.segment.pending").tag(AdminDriversSegment.pending)
+                    Text("admin.drivers.segment.active").tag(AdminDriversSegment.active)
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+
+                Group {
+                    switch segment {
+                    case .pending:
+                        pendingSection
+                    case .active:
+                        activeSection
                     }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .background(AppColors.backgroundLight)
             .navigationTitle(Text("admin.drivers.title"))
@@ -58,6 +52,121 @@ struct AdminDriversView: View {
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private var pendingSection: some View {
+        if authService.pendingDrivers.isEmpty {
+            VStack {
+                Spacer()
+                EmptyStateView(
+                    icon: "person.2.fill",
+                    title: String(localized: "admin.drivers.empty"),
+                    subtitle: String(localized: "admin.drivers.empty.body")
+                )
+                Spacer()
+            }
+        } else {
+            ScrollView {
+                LazyVStack(spacing: 12) {
+                    ForEach(authService.pendingDrivers) { driver in
+                        DriverApprovalCard(
+                            driver: driver,
+                            onApprove: {
+                                Task { await authService.approveDriver(userId: driver.id) }
+                            },
+                            onReject: {
+                                driverToReject = driver
+                            }
+                        )
+                    }
+                }
+                .padding(16)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var activeSection: some View {
+        if authService.approvedDrivers.isEmpty {
+            VStack {
+                Spacer()
+                EmptyStateView(
+                    icon: "person.3.fill",
+                    title: String(localized: "admin.drivers.active.empty"),
+                    subtitle: String(localized: "admin.drivers.active.empty.body")
+                )
+                Spacer()
+            }
+        } else {
+            ScrollView {
+                LazyVStack(spacing: 12) {
+                    ForEach(authService.approvedDrivers) { driver in
+                        NavigationLink {
+                            AdminDriverScheduleDetailView(driver: driver)
+                        } label: {
+                            ApprovedDriverRow(driver: driver)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(16)
+            }
+        }
+    }
+}
+
+private struct ApprovedDriverRow: View {
+    let driver: User
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(AppColors.boltGreen.opacity(0.12))
+                    .frame(width: 44, height: 44)
+                Image(systemName: "person.fill")
+                    .font(.system(size: 20))
+                    .foregroundStyle(AppColors.boltGreen)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(driver.displayName ?? driver.email ?? driver.id)
+                    .font(AppFont.titleSmall())
+                    .foregroundStyle(AppColors.gray900)
+                if let email = driver.email {
+                    Text(email)
+                        .font(AppFont.bodySmall())
+                        .foregroundStyle(AppColors.gray500)
+                }
+                HStack(spacing: 8) {
+                    StatusChip(
+                        label: driver.isDriverOnline
+                            ? String(localized: "admin.drivers.status.online")
+                            : String(localized: "admin.drivers.status.offline"),
+                        outlined: !driver.isDriverOnline,
+                        color: driver.isDriverOnline ? AppColors.boltGreen : AppColors.gray300
+                    )
+                    if driver.availabilityEnabled {
+                        StatusChip(
+                            label: String(localized: "admin.drivers.availability.on"),
+                            outlined: true,
+                            color: AppColors.boltGreen
+                        )
+                    }
+                }
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(AppColors.gray300)
+        }
+        .padding(16)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.r16))
+        .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
     }
 }
 

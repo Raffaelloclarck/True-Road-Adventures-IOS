@@ -1,7 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.buildPayload = buildPayload;
+exports.buildChatMessagePayload = buildChatMessagePayload;
 exports.getFcmToken = getFcmToken;
+exports.buildDiscountCodePayload = buildDiscountCodePayload;
 exports.sendToUser = sendToUser;
 const admin = require("firebase-admin");
 /**
@@ -64,19 +66,65 @@ function buildPayload(status, rideId, scheduledAtMs) {
             return null;
     }
 }
-/** Fetches the FCM token for a user from Firestore. */
-async function getFcmToken(userId) {
+const CHAT_PREVIEW_MAX_LEN = 80;
+/**
+ * FCM payload for a new in-ride chat message.
+ * Recipient is inferred server-side from ride participants; client uses data.screen === "chat".
+ */
+function buildChatMessagePayload(rideId, rawText, senderIsCustomer) {
+    const preview = rawText.length <= CHAT_PREVIEW_MAX_LEN
+        ? rawText
+        : `${rawText.slice(0, CHAT_PREVIEW_MAX_LEN)}…`;
+    const who = senderIsCustomer ? "Je passagier" : "Je chauffeur";
+    return {
+        title: "Nieuw bericht",
+        body: `${who}: ${preview}`,
+        data: {
+            rideId,
+            screen: "chat",
+        },
+    };
+}
+/**
+ * Fetches the FCM token for a user from Firestore.
+ * Uses the role-specific field (fcmTokenDriver / fcmTokenCustomer) when provided,
+ * falling back to the legacy fcmToken field for users who have not yet updated their app.
+ */
+async function getFcmToken(userId, role) {
     const doc = await admin.firestore().collection("users").doc(userId).get();
     if (!doc.exists)
         return null;
-    return doc.data()?.fcmToken ?? null;
+    const data = doc.data();
+    if (role === "DRIVER") {
+        return (data["fcmTokenDriver"] ?? null);
+    }
+    return (data["fcmTokenCustomer"] ?? null);
+}
+/**
+ * Builds an FCM payload announcing a new discount code to riders.
+ * The `screen` data field is set to "promotions" so the app can deep-link
+ * directly to the Promotions tab when the notification is tapped.
+ */
+function buildDiscountCodePayload(code, value, type, description) {
+    const valueLabel = type === "PERCENTAGE"
+        ? `${value}% korting`
+        : `SRD ${value} korting`;
+    const body = description?.trim()
+        ? `${description.trim()} — gebruik code ${code} in de app.`
+        : `${valueLabel} op je rit. Gebruik code ${code} in de app.`;
+    return {
+        title: `Nieuwe kortingscode: ${code}`,
+        body,
+        data: { screen: "promotions" },
+    };
 }
 /**
  * Sends an FCM push notification to a single user.
+ * Pass recipientRole ("DRIVER" or "CUSTOMER") so the correct app-specific token is used.
  * Silently skips when the user has no registered token.
  */
-async function sendToUser(userId, payload) {
-    const token = await getFcmToken(userId);
+async function sendToUser(userId, payload, recipientRole) {
+    const token = await getFcmToken(userId, recipientRole);
     if (!token) {
         console.log(`No FCM token for user ${userId} — skipping notification.`);
         return;
@@ -91,6 +139,10 @@ async function sendToUser(userId, payload) {
         apns: {
             payload: {
                 aps: {
+                    alert: {
+                        title: payload.title,
+                        body: payload.body,
+                    },
                     sound: "default",
                     badge: 1,
                 },

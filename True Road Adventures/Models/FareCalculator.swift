@@ -1,42 +1,24 @@
 import Foundation
 
-enum RideTier: String, Codable, CaseIterable {
+enum RideTier: String, Codable {
     case standard = "STANDARD"
-    case comfort  = "COMFORT"
-    case xl       = "XL"
 
-    var multiplier: Double {
-        switch self {
-        case .standard: return 1.0
-        case .comfort:  return 1.6
-        case .xl:       return 2.1
-        }
-    }
-
-    var displayName: String {
-        switch self {
-        case .standard: return "Standaard"
-        case .comfort:  return "Comfort"
-        case .xl:       return "XL"
-        }
-    }
-
-    var icon: String {
-        switch self {
-        case .standard: return "car.fill"
-        case .comfort:  return "car.2.fill"
-        case .xl:       return "suv.side.fill"
-        }
-    }
+    // nonisolated: Swift 6 may infer @MainActor for types used heavily from UI/services;
+    // these are pure constants and must be readable from FareCalculator.realtimeFare, etc.
+    nonisolated var multiplier: Double { 1.0 }
+    nonisolated var displayName: String { "Standaard" }
+    nonisolated var icon: String { "car.fill" }
 }
 
 enum FareCalculator {
-    static let startFare: Double  = 40.0
-    static let perKm: Double      = 30.0
-    static let perMinRide: Double = 2.0
-    static let perMinWait: Double = 3.33
+    // nonisolated: Swift 6 can infer @MainActor for static members used mainly on the main
+    // actor; defaults and call sites outside that actor must still read these constants.
+    nonisolated static let startFare: Double  = 40.0
+    nonisolated static let perKm: Double      = 30.0
+    nonisolated static let perMinRide: Double = 2.0
+    nonisolated static let perMinWait: Double = 3.33
 
-    static func realtimeFare(
+    nonisolated static func realtimeFare(
         distanceKm: Double,
         rideSeconds: Int,
         waitSeconds: Int,
@@ -54,7 +36,7 @@ enum FareCalculator {
 
     /// Returns the discounted fare and the amount of credits actually applied.
     /// Credits are capped at the full fare — the rider never pays negative.
-    static func applyCredits(to fare: Double, credits: Double) -> (final: Double, applied: Double) {
+    nonisolated static func applyCredits(to fare: Double, credits: Double) -> (final: Double, applied: Double) {
         let applied = min(max(credits, 0), fare)
         return (max(0, fare - applied), applied)
     }

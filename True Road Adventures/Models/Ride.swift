@@ -61,6 +61,8 @@ struct Ride: Codable, Identifiable, Hashable {
     var totalFareRealtime: Double
     var totalFareFinal: Double?
     var tier: RideTier
+    var appliedDiscountCode: String?
+    var discountAmount: Double?
 
     init(
         id: String = UUID().uuidString,
@@ -93,7 +95,9 @@ struct Ride: Codable, Identifiable, Hashable {
         perMinWait: Double = FareCalculator.perMinWait,
         totalFareRealtime: Double = FareCalculator.startFare,
         totalFareFinal: Double? = nil,
-        tier: RideTier = .standard
+        tier: RideTier = .standard,
+        appliedDiscountCode: String? = nil,
+        discountAmount: Double? = nil
     ) {
         self.id = id
         self.customerId = customerId
@@ -126,6 +130,8 @@ struct Ride: Codable, Identifiable, Hashable {
         self.totalFareRealtime = totalFareRealtime
         self.totalFareFinal = totalFareFinal
         self.tier = tier
+        self.appliedDiscountCode = appliedDiscountCode
+        self.discountAmount = discountAmount
     }
 }
 

@@ -39,7 +39,7 @@ final class RideService: ObservableObject {
                 for await rides in repository.ridesForCustomer(user.id) {
                     await MainActor.run {
                         self.customerHistory = rides
-                        self.activeRide = rides.first(where: { $0.status != .completed && $0.status != .cancelled })
+                        self.activeRide = Self.pickActiveRide(from: rides)
                     }
                 }
             } else if user.role == .admin {
@@ -52,7 +52,7 @@ final class RideService: ObservableObject {
                 for await rides in repository.ridesForDriver(user.id) {
                     await MainActor.run {
                         self.driverHistory = rides
-                        self.activeRide = rides.first(where: { $0.status != .completed && $0.status != .cancelled })
+                        self.activeRide = Self.pickActiveRide(from: rides)
                     }
                 }
             }
@@ -70,7 +70,7 @@ final class RideService: ObservableObject {
         }
     }
 
-    func requestRide(customerId: String, pickup: LatLng, destination: LatLng, pickupAddress: String?, destinationAddress: String?, scheduledAt: Date?, tier: RideTier, estimatedFare: Double) async throws {
+    func requestRide(customerId: String, pickup: LatLng, destination: LatLng, pickupAddress: String?, destinationAddress: String?, scheduledAt: Date?, tier: RideTier = .standard, estimatedFare: Double = FareCalculator.startFare, appliedDiscountCode: String? = nil, discountAmount: Double? = nil) async throws {
         try ensureOnline()
         let ride = try await repository.createRide(
             customerId: customerId,
@@ -80,7 +80,9 @@ final class RideService: ObservableObject {
             pickupAddress: pickupAddress,
             destinationAddress: destinationAddress,
             tier: tier,
-            estimatedFare: estimatedFare
+            estimatedFare: estimatedFare,
+            appliedDiscountCode: appliedDiscountCode,
+            discountAmount: discountAmount
         )
         await MainActor.run {
             activeRide = ride
@@ -201,5 +203,28 @@ final class RideService: ObservableObject {
         if let monitor = networkMonitor, !monitor.isOnline {
             throw RideActionError.offline
         }
+    }
+
+    /// Picks the ride the user should treat as "active" when multiple non-terminal rides exist.
+    /// Prefers in-flight trips (driver assigned / en route) over a newer `SEARCHING` row.
+    private static func pickActiveRide(from rides: [Ride]) -> Ride? {
+        let candidates = rides.filter { $0.status != .completed && $0.status != .cancelled }
+        guard !candidates.isEmpty else { return nil }
+
+        let inFlight: Set<RideStatus> = [.accepted, .arrived, .pickedUp]
+        let progressed = candidates.filter { inFlight.contains($0.status) }
+        if let best = progressed.max(by: { $0.updatedAt < $1.updatedAt }) {
+            return best
+        }
+
+        let searching = candidates.filter { $0.status == .searching }
+        if let best = searching.max(by: { lhs, rhs in
+            if lhs.createdAt != rhs.createdAt { return lhs.createdAt < rhs.createdAt }
+            return lhs.updatedAt < rhs.updatedAt
+        }) {
+            return best
+        }
+
+        return candidates.max(by: { $0.updatedAt < $1.updatedAt })
     }
 }

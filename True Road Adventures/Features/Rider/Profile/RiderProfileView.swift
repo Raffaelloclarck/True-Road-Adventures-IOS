@@ -1,10 +1,19 @@
 import SwiftUI
+#if canImport(FirebaseFunctions)
+import FirebaseFunctions
+#endif
 
 struct RiderProfileView: View {
     let currentUser: User
     @EnvironmentObject private var authService: AuthService
+    @EnvironmentObject private var discountCodeService: DiscountCodeService
     @State private var showDeleteAlert = false
     @State private var navigateTo: ProfileDestination? = nil
+
+    @State private var discountCode = ""
+    @State private var isRedeemingCode = false
+    @State private var redeemResultMessage: String?
+    @State private var redeemSuccess = false
 
     var body: some View {
         NavigationStack {
@@ -14,6 +23,9 @@ struct RiderProfileView: View {
                     promoCard
                         .padding(.horizontal, 16)
                         .padding(.top, 16)
+                    kortingscodeCard
+                        .padding(.horizontal, 16)
+                        .padding(.top, 12)
                     profileSections
                         .padding(.horizontal, 16)
                         .padding(.top, 16)
@@ -24,6 +36,14 @@ struct RiderProfileView: View {
             .navigationDestination(item: $navigateTo) { dest in
                 profileDestination(dest)
             }
+        }
+        .alert(
+            redeemSuccess ? Text("discount.code.title") : Text("Fout"),
+            isPresented: Binding(get: { redeemResultMessage != nil }, set: { if !$0 { redeemResultMessage = nil } })
+        ) {
+            Button("OK") { redeemResultMessage = nil }
+        } message: {
+            Text(redeemResultMessage ?? "")
         }
         .alert(Text("rider.profile.delete.title"), isPresented: $showDeleteAlert) {
             Button(role: .cancel) {} label: { Text("rider.profile.delete.cancel") }
@@ -124,6 +144,90 @@ struct RiderProfileView: View {
             .clipShape(RoundedRectangle(cornerRadius: AppRadius.r16))
         }
         .buttonStyle(.plain)
+    }
+
+    private var kortingscodeCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(AppColors.boltGreenLight)
+                        .frame(width: 44, height: 44)
+                    Image(systemName: "tag.fill")
+                        .foregroundStyle(AppColors.boltGreen)
+                }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("discount.code.title")
+                        .font(AppFont.titleSmall())
+                        .foregroundStyle(AppColors.gray900)
+                    Text("discount.code.profile.subtitle")
+                        .font(AppFont.bodySmall())
+                        .foregroundStyle(AppColors.gray500)
+                }
+                Spacer()
+            }
+
+            HStack(spacing: 8) {
+                TextField(String(localized: "discount.code.placeholder"), text: $discountCode)
+                    .font(AppFont.bodyMedium())
+                    .textInputAutocapitalization(.characters)
+                    .autocorrectionDisabled()
+                    .onChange(of: discountCode) { _, new in discountCode = new.uppercased() }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(AppColors.backgroundLight)
+                    .clipShape(RoundedRectangle(cornerRadius: AppRadius.r12))
+
+                Button {
+                    Task { await redeemCodeForCredits() }
+                } label: {
+                    if isRedeemingCode {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                            .tint(.white)
+                            .frame(width: 80, height: 40)
+                            .background(AppColors.boltGreen)
+                            .clipShape(RoundedRectangle(cornerRadius: AppRadius.r12))
+                    } else {
+                        Text("discount.code.apply")
+                            .font(AppFont.labelMedium())
+                            .foregroundStyle(.white)
+                            .frame(width: 80, height: 40)
+                            .background(discountCode.isEmpty ? AppColors.boltGreen.opacity(0.4) : AppColors.boltGreen)
+                            .clipShape(RoundedRectangle(cornerRadius: AppRadius.r12))
+                    }
+                }
+                .buttonStyle(.plain)
+                .disabled(discountCode.isEmpty || isRedeemingCode)
+            }
+        }
+        .padding(16)
+        .background(AppColors.boltGreenLight)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.r16))
+    }
+
+    private func redeemCodeForCredits() async {
+        guard !discountCode.isEmpty else { return }
+        isRedeemingCode = true
+        defer { isRedeemingCode = false }
+        do {
+            let result = try await discountCodeService.redeemCode(discountCode, context: .credits, fare: nil)
+            let amount = result.discountAmount > 0 ? result.discountAmount : result.value
+            redeemSuccess = true
+            redeemResultMessage = String(format: String(localized: "discount.code.credits_added"), amount)
+            discountCode = ""
+            await authService.refreshUser()
+        } catch {
+            redeemSuccess = false
+            let msg = error.localizedDescription
+            switch msg {
+            case "discount.code.invalid":          redeemResultMessage = String(localized: "discount.code.invalid")
+            case "discount.code.expired":          redeemResultMessage = String(localized: "discount.code.expired")
+            case "discount.code.max_uses_reached": redeemResultMessage = String(localized: "discount.code.max_uses_reached")
+            case "discount.code.already_used":     redeemResultMessage = String(localized: "discount.code.already_used")
+            default: redeemResultMessage = msg
+            }
+        }
     }
 
     private var profileSections: some View {

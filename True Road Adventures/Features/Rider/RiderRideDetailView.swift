@@ -8,6 +8,7 @@ struct RiderRideDetailView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var showCancelConfirm = false
+    @State private var cancelError: Error? = nil
     @State private var showRatingSheet = false
     @State private var selectedScore = 5
     @State private var ratingComment = ""
@@ -45,6 +46,14 @@ struct RiderRideDetailView: View {
         }
         .sheet(isPresented: $showRatingSheet) {
             ratingSheet
+        }
+        .alert(
+            String(localized: "ride.cancel.error.title"),
+            isPresented: Binding(get: { cancelError != nil }, set: { if !$0 { cancelError = nil } })
+        ) {
+            Button(String(localized: "action.ok"), role: .cancel) { cancelError = nil }
+        } message: {
+            Text(cancelError?.localizedDescription ?? "")
         }
     }
 
@@ -280,8 +289,12 @@ struct RiderRideDetailView: View {
 
     private func cancelRide() {
         Task {
-            try? await rideService.updateStatus(ride.id, status: .cancelled)
-            await MainActor.run { dismiss() }
+            do {
+                try await rideService.updateStatus(ride.id, status: .cancelled)
+                await MainActor.run { dismiss() }
+            } catch {
+                await MainActor.run { cancelError = error }
+            }
         }
     }
 

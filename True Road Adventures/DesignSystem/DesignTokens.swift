@@ -12,6 +12,7 @@ enum AppColors {
     static let gray900 = Color(hex: 0x111827)
     static let gray700 = Color(hex: 0x374151)
     static let gray500 = Color(hex: 0x6B7280)
+    static let gray400 = Color(hex: 0x9CA3AF)
     static let gray300 = Color(hex: 0xD1D5DB)
     static let gray100 = Color(hex: 0xF3F4F6)
     static let gray50  = Color(hex: 0xF7F8F9)
