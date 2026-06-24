@@ -173,7 +173,14 @@ final class NavigationSessionManager: ObservableObject {
         recentSpeeds.append(update.speedKmh)
         if recentSpeeds.count > 5 { recentSpeeds.removeFirst() }
 
-        let snapped = snapToPolyline(point: update.latLng, polyline: snapshot.routePoints)
+        // Skip polyline snapping for placeholder / straight-line routes — snapping
+        // to a 2-point fallback pulls the driver hundreds of metres off real GPS.
+        let snapped: (point: LatLng, distance: Double)
+        if snapshot.routePoints.count <= 2 {
+            snapped = (update.latLng, 0)
+        } else {
+            snapped = snapToPolyline(point: update.latLng, polyline: snapshot.routePoints)
+        }
         let distanceToLine = snapped.distance
         let snappedPoint = snapped.point
 
@@ -226,7 +233,7 @@ final class NavigationSessionManager: ObservableObject {
                 rerouteTask?.cancel()
                 rerouteTask = Task { [weak self] in
                     guard let self else { return }
-                    let res = await directionsClient.fetch(origin: snappedPoint, destination: target)
+                    let res = await directionsClient.fetch(origin: update.latLng, destination: target)
                     guard !res.points.isEmpty, !Task.isCancelled else { return }
                     await MainActor.run {
                         guard !Task.isCancelled else { return }

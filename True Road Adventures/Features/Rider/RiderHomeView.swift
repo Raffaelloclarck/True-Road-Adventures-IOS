@@ -125,6 +125,7 @@ struct RiderHomeView: View {
                     .environmentObject(rideService)
                     .environmentObject(networkMonitor)
                     .environmentObject(authService)
+                    .environmentObject(locationService)
             }
         }
         .fullScreenCover(isPresented: $showCompletionFromHome, onDismiss: { completedRideForHome = nil }) {
@@ -257,7 +258,7 @@ struct RiderHomeView: View {
                 },
                 routePoints: homeRoutePoints,
                 trafficSegments: homeTrafficSegments,
-                bearing: 0,
+                bearing: activeRide?.driverBearing ?? 0,
                 speedKmh: 0,
                 followDriver: false,
                 showTraffic: false,

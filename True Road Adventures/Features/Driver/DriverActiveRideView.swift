@@ -27,6 +27,7 @@ struct DriverActiveRideView: View {
     @State private var snappedLocation: LatLng?
     @State private var gpsLocation: LatLng?
     @State private var navigationStarted = false
+    @State private var needsGpsRouteRefresh = false
     @State private var isRerouting = false
 
     // Camera / map controls
@@ -168,7 +169,10 @@ struct DriverActiveRideView: View {
             guard let location else { return }
             gpsLocation = LatLng(latitude: location.coordinate.latitude,
                                  longitude: location.coordinate.longitude)
-            if !navigationStarted {
+            if needsGpsRouteRefresh {
+                needsGpsRouteRefresh = false
+                startNavigation()
+            } else if !navigationStarted {
                 navigationStarted = true
                 startNavigation()
             }
@@ -260,6 +264,7 @@ struct DriverActiveRideView: View {
                 localWaitSeconds = 0
                 startRideTicker()
                 startFareUpdateTimer()
+                startNavigation(to: currentRide.destinationLocation)
             case .cancelled:
                 rideTickerTask?.cancel()
                 fareUpdateTask?.cancel()
@@ -343,6 +348,7 @@ struct DriverActiveRideView: View {
         // Reset announcement state for the new route
         lastAnnouncedStepIndex = -1
         lastAnnouncedZone = ""
+        needsGpsRouteRefresh = locationService.lastLocation == nil
         rideService.startNavigation(origin: origin, destination: target) { _ in }
     }
 
@@ -371,8 +377,11 @@ struct DriverActiveRideView: View {
         TRAGoogleMapView(
             pickup: currentRide.pickupLocation,
             destination: currentRide.destinationLocation,
-            driverLocation: snappedLocation ?? gpsLocation ?? currentRide.driverLocation,
-            customerLocation: currentRide.status == .accepted ? currentRide.customerLocation : nil,
+            driverLocation: gpsLocation ?? currentRide.driverLocation,
+            cameraFollowLocation: snappedLocation,
+            customerLocation: (currentRide.status == .accepted || currentRide.status == .arrived)
+                ? currentRide.customerLocation
+                : nil,
             routePoints: currentRoutePoints,
             trafficSegments: currentTrafficSegments,
             bearing: useHeadingUp ? currentBearing : 0,

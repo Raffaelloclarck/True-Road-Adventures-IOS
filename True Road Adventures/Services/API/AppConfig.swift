@@ -38,12 +38,16 @@ struct AppConfig {
         let mapsKey = info["GOOGLE_MAPS_API_KEY"] as? String
         let placesKey = info["GOOGLE_PLACES_API_KEY"] as? String ?? mapsKey
         let rawDirectionsKey = info["GOOGLE_DIRECTIONS_API_KEY"] as? String ?? ""
-        // Use the dedicated Directions key if set; otherwise fall back to the Maps key
-        // so existing projects work out of the box before a server key is configured.
-        let resolvedDirectionsRaw = (rawDirectionsKey.isEmpty || rawDirectionsKey.hasPrefix("REPLACE_"))
-            ? (mapsKey ?? "")
+        // Only use a dedicated server-side Routes API key. Do not fall back to the
+        // iOS Maps SDK key — it is bundle-restricted and always returns 403 here.
+        let directionsKey: String? = (rawDirectionsKey.isEmpty || rawDirectionsKey.hasPrefix("REPLACE_"))
+            ? nil
             : rawDirectionsKey
-        let directionsKey: String? = resolvedDirectionsRaw.isEmpty ? nil : resolvedDirectionsRaw
+        #if DEBUG
+        if directionsKey == nil {
+            print("⚠️  AppConfig: GOOGLE_DIRECTIONS_API_KEY not set — routing will use OSRM fallback.")
+        }
+        #endif
         let customerBundleId = info["CUSTOMER_BUNDLE_ID"] as? String
         let driverBundleId = info["DRIVER_BUNDLE_ID"] as? String
         let useMockAPI = (info["USE_MOCK_API"] as? String)?.uppercased() == "YES"

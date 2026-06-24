@@ -27,6 +27,13 @@ final class LocationService: NSObject, ObservableObject {
     }
 
     func startUpdating() {
+        manager.distanceFilter = 10
+        manager.startUpdatingLocation()
+    }
+
+    /// Highest-frequency updates for active navigation / live ride tracking.
+    func startHighAccuracyUpdates() {
+        manager.distanceFilter = kCLDistanceFilterNone
         manager.startUpdatingLocation()
     }
 
@@ -34,6 +41,7 @@ final class LocationService: NSObject, ObservableObject {
         #if !targetEnvironment(simulator)
         manager.allowsBackgroundLocationUpdates = true
         #endif
+        manager.distanceFilter = kCLDistanceFilterNone
         manager.startUpdatingLocation()
     }
 
