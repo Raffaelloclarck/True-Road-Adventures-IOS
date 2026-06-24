@@ -834,4 +834,6 @@ struct RiderRideRequestView: View {
         .environmentObject(NetworkMonitor.preview)
         .environmentObject(LocationService())
         .environmentObject(AuthService(repository: InMemoryAuthRepository()))
+        .environmentObject(DiscountCodeService())
+        .environmentObject(PaymentService(config: AppConfig.load()))
 }
