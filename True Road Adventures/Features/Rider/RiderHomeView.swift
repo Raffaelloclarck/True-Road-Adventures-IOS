@@ -40,6 +40,7 @@ struct RiderHomeView: View {
     @EnvironmentObject private var networkMonitor: NetworkMonitor
     @EnvironmentObject private var pushNavigationStore: PushNavigationStore
     @EnvironmentObject private var discountCodeService: DiscountCodeService
+    @EnvironmentObject private var paymentService: PaymentService
     @Environment(\.openDrawer) private var openDrawer
 
     @State private var rideRequestPresentation: RideRequestPresentation? = nil
@@ -104,6 +105,7 @@ struct RiderHomeView: View {
                 .environmentObject(locationService)
                 .environmentObject(authService)
                 .environmentObject(discountCodeService)
+                .environmentObject(paymentService)
         }
         .fullScreenCover(isPresented: $showRideRequestScheduled) {
             RiderRideRequestView(scheduledAt: viewModel.scheduledAt)
@@ -112,6 +114,7 @@ struct RiderHomeView: View {
                 .environmentObject(locationService)
                 .environmentObject(authService)
                 .environmentObject(discountCodeService)
+                .environmentObject(paymentService)
         }
         .fullScreenCover(isPresented: $showActiveRideFull, onDismiss: {
             capturedActiveRide = nil
@@ -125,6 +128,7 @@ struct RiderHomeView: View {
                     .environmentObject(rideService)
                     .environmentObject(networkMonitor)
                     .environmentObject(authService)
+                    .environmentObject(paymentService)
             }
         }
         .fullScreenCover(isPresented: $showCompletionFromHome, onDismiss: { completedRideForHome = nil }) {
@@ -137,6 +141,7 @@ struct RiderHomeView: View {
                 .environmentObject(rideService)
                 .environmentObject(authService)
                 .environmentObject(networkMonitor)
+                .environmentObject(paymentService)
             }
         }
         .sheet(isPresented: $showSavedPlaces) {

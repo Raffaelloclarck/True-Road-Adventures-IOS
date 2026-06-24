@@ -42,6 +42,9 @@ struct Ride: Codable, Identifiable, Hashable {
     var updatedAt: Date
     var price: Double?
     var paymentStatus: PaymentStatus?
+    var paymentMethod: RidePaymentMethod?
+    var paymentIntentId: String?
+    var currency: String?
     var driverLocation: LatLng?
     var driverBearing: Double?
     var customerLocation: LatLng?
@@ -77,6 +80,9 @@ struct Ride: Codable, Identifiable, Hashable {
         updatedAt: Date = .now,
         price: Double? = nil,
         paymentStatus: PaymentStatus? = nil,
+        paymentMethod: RidePaymentMethod? = nil,
+        paymentIntentId: String? = nil,
+        currency: String? = "SRD",
         driverLocation: LatLng? = nil,
         driverBearing: Double? = nil,
         customerLocation: LatLng? = nil,
@@ -111,6 +117,9 @@ struct Ride: Codable, Identifiable, Hashable {
         self.updatedAt = updatedAt
         self.price = price
         self.paymentStatus = paymentStatus
+        self.paymentMethod = paymentMethod
+        self.paymentIntentId = paymentIntentId
+        self.currency = currency
         self.driverLocation = driverLocation
         self.driverBearing = driverBearing
         self.customerLocation = customerLocation
@@ -132,6 +141,9 @@ struct Ride: Codable, Identifiable, Hashable {
         self.tier = tier
         self.appliedDiscountCode = appliedDiscountCode
         self.discountAmount = discountAmount
+        self.paymentMethod = paymentMethod
+        self.paymentIntentId = paymentIntentId
+        self.currency = currency
     }
 }
 

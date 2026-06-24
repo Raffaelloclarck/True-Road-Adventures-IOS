@@ -8,11 +8,14 @@ struct RiderRideCompletionView: View {
     @EnvironmentObject private var rideService: RideService
     @EnvironmentObject private var authService: AuthService
     @EnvironmentObject private var networkMonitor: NetworkMonitor
+    @EnvironmentObject private var paymentService: PaymentService
 
     @State private var selectedScore: Int = 5
     @State private var comment: String = ""
     @State private var selectedChips: Set<String> = []
     @State private var isSubmitting = false
+    @State private var isProcessingPayment = false
+    @State private var paymentBanner: String?
 
     private let feedbackChipKeys = [
         "completion.feedback.friendly",
@@ -25,6 +28,9 @@ struct RiderRideCompletionView: View {
         ScrollView {
             VStack(spacing: 20) {
                 completionHeader
+                if let banner = paymentBanner {
+                    paymentStatusBanner(banner)
+                }
                 fareCard
                 if ride.appliedDiscountCode != nil {
                     discountRow
@@ -67,6 +73,48 @@ struct RiderRideCompletionView: View {
         }
         .background(AppColors.backgroundLight)
         .ignoresSafeArea(edges: .bottom)
+        .task { await processCardPaymentIfNeeded() }
+    }
+
+    private func paymentStatusBanner(_ text: String) -> some View {
+        HStack(spacing: 10) {
+            if isProcessingPayment {
+                ProgressView().scaleEffect(0.85)
+            } else {
+                Image(systemName: "creditcard.fill")
+                    .foregroundStyle(AppColors.boltGreen)
+            }
+            Text(text)
+                .font(AppFont.labelMedium())
+                .foregroundStyle(AppColors.gray700)
+            Spacer()
+        }
+        .padding(14)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: AppRadius.r12))
+        .padding(.horizontal, 20)
+    }
+
+    private func processCardPaymentIfNeeded() async {
+        guard ride.paymentMethod == .card,
+              ride.paymentStatus == .pending,
+              let amount = ride.totalFareFinal, amount > 0 else { return }
+
+        await MainActor.run {
+            isProcessingPayment = true
+            paymentBanner = String(localized: "payment.processing")
+        }
+        do {
+            try await paymentService.captureRidePayment(rideId: ride.id, amount: amount)
+            await MainActor.run {
+                paymentBanner = String(localized: "payment.paid")
+            }
+        } catch {
+            await MainActor.run {
+                paymentBanner = error.localizedDescription
+            }
+        }
+        await MainActor.run { isProcessingPayment = false }
     }
 
     // MARK: - Completion header

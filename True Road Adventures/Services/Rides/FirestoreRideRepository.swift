@@ -26,17 +26,21 @@ final class FirestoreRideRepository: RideRepository {
         tier: RideTier,
         estimatedFare: Double,
         appliedDiscountCode: String?,
-        discountAmount: Double?
+        discountAmount: Double?,
+        paymentMethod: RidePaymentMethod
     ) async throws -> Ride {
         let ref = collection.document()
         let now = msNow()
+        let initialPaymentStatus: PaymentStatus = paymentMethod == .credits ? .paid : .pending
         var data: [String: Any] = [
             "customerId":        customerId,
             "pickup":            geoPoint(pickup),
             "destination":       geoPoint(destination),
             "status":            RideStatus.searching.rawValue,
             "activeStatus":      ActiveRideStatus.idle.rawValue,
-            "paymentStatus":     PaymentStatus.pending.rawValue,
+            "paymentStatus":     initialPaymentStatus.rawValue,
+            "paymentMethod":     paymentMethod.rawValue,
+            "currency":          "SRD",
             "createdAt":         now,
             "updatedAt":         now,
             "distanceKm":        0.0,
@@ -66,6 +70,9 @@ final class FirestoreRideRepository: RideRepository {
             pickupAddress: pickupAddress,
             destinationAddress: destinationAddress,
             scheduledAt: scheduledAt,
+            paymentStatus: initialPaymentStatus,
+            paymentMethod: paymentMethod,
+            currency: "SRD",
             totalFareRealtime: estimatedFare,
             tier: tier,
             appliedDiscountCode: appliedDiscountCode,
@@ -302,6 +309,8 @@ private func rideFromDocument(id: String, data: [String: Any]) -> Ride? {
     let active     = ActiveRideStatus(rawValue: activeStr) ?? .idle
     let payStr     = data["paymentStatus"] as? String
     let payment    = payStr.flatMap { PaymentStatus(rawValue: $0) }
+    let methodStr  = data["paymentMethod"] as? String
+    let method     = methodStr.flatMap { RidePaymentMethod(rawValue: $0) }
     let tierStr    = data["tier"] as? String ?? RideTier.standard.rawValue
     let tier       = RideTier(rawValue: tierStr) ?? .standard
 
@@ -318,6 +327,9 @@ private func rideFromDocument(id: String, data: [String: Any]) -> Ride? {
         updatedAt:                   dateFrom(ms: data["updatedAt"]),
         price:                       data["price"] as? Double,
         paymentStatus:               payment,
+        paymentMethod:               method,
+        paymentIntentId:             data["paymentIntentId"] as? String,
+        currency:                    data["currency"] as? String,
         driverLocation:              latLngFrom(data["driverLocation"]),
         driverBearing:               (data["driverBearing"] as? Double) ?? (data["driverBearing"] as? NSNumber)?.doubleValue,
         customerLocation:            latLngFrom(data["customerLocation"]),

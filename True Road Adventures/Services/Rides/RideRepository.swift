@@ -12,7 +12,8 @@ protocol RideRepository {
         tier: RideTier,
         estimatedFare: Double,
         appliedDiscountCode: String?,
-        discountAmount: Double?
+        discountAmount: Double?,
+        paymentMethod: RidePaymentMethod
     ) async throws -> Ride
 
     func ridesForCustomer(_ customerId: String) -> AsyncStream<[Ride]>
@@ -90,7 +91,8 @@ final class InMemoryRideRepository: RideRepository {
         tier: RideTier,
         estimatedFare: Double,
         appliedDiscountCode: String?,
-        discountAmount: Double?
+        discountAmount: Double?,
+        paymentMethod: RidePaymentMethod
     ) async throws -> Ride {
         var ride = Ride(
             customerId: customerId,
@@ -102,7 +104,9 @@ final class InMemoryRideRepository: RideRepository {
             totalFareRealtime: estimatedFare,
             tier: tier,
             appliedDiscountCode: appliedDiscountCode,
-            discountAmount: discountAmount
+            discountAmount: discountAmount,
+            paymentMethod: paymentMethod,
+            paymentStatus: paymentMethod == .credits ? .paid : .pending
         )
         ride.status = .searching
         rides[ride.id] = ride
@@ -286,7 +290,8 @@ final class ApiRideRepository: RideRepository {
         tier: RideTier,
         estimatedFare: Double,
         appliedDiscountCode: String?,
-        discountAmount: Double?
+        discountAmount: Double?,
+        paymentMethod: RidePaymentMethod
     ) async throws -> Ride {
         let request = ApiRequest(
             path: "/rides",
@@ -301,7 +306,8 @@ final class ApiRideRepository: RideRepository {
                 tier: tier.rawValue,
                 estimatedFare: estimatedFare,
                 appliedDiscountCode: appliedDiscountCode,
-                discountAmount: discountAmount
+                discountAmount: discountAmount,
+                paymentMethod: paymentMethod.rawValue
             )
         )
         return try await send(request)
@@ -444,6 +450,7 @@ final class ApiRideRepository: RideRepository {
         let estimatedFare: Double
         let appliedDiscountCode: String?
         let discountAmount: Double?
+        let paymentMethod: String?
     }
 
     private struct DriverLocationBody: Encodable {
