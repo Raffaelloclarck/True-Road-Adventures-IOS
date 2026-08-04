@@ -8,6 +8,9 @@ struct TRAGoogleMapView: UIViewRepresentable {
     var pickup: LatLng?
     var destination: LatLng?
     var driverLocation: LatLng?
+    /// Optional position for follow-mode camera look-ahead (e.g. route-snapped).
+    /// When set, the driver marker still uses `driverLocation` (raw GPS).
+    var cameraFollowLocation: LatLng?
     var customerLocation: LatLng?
     /// Rider/driver's own GPS position — used to centre the home-screen map
     /// before any ride is active (pickup & destination are nil).
@@ -286,7 +289,8 @@ struct TRAGoogleMapView: UIViewRepresentable {
         private var wasFollowing: Bool = false
 
         func updateCamera(on mapView: GMSMapView) {
-            if parent.followDriver, let loc = parent.driverLocation {
+            let followPosition = parent.cameraFollowLocation ?? parent.driverLocation
+            if parent.followDriver, let loc = followPosition {
                 // ── Adaptive bearing smoothing (EMA) ──────────────────────────
                 // Use a higher alpha when the bearing is changing rapidly (real
                 // turn) vs. nearly constant (GPS noise while driving straight).

@@ -55,6 +55,22 @@ struct PermissionsOnboardingView: View {
         .onAppear {
             checkExistingPermissions()
         }
+        .onChange(of: locationService.authorizationStatus) { _, status in
+            guard currentStep == 0 else { return }
+            switch status {
+            case .authorizedWhenInUse, .authorizedAlways:
+                if !locationGranted {
+                    locationGranted = true
+                    locationService.startUpdating()
+                    withAnimation(.spring(response: 0.4)) { currentStep = 1 }
+                }
+            case .denied, .restricted:
+                // User declined — allow advancing via skip or notification step.
+                withAnimation(.spring(response: 0.4)) { currentStep = 1 }
+            default:
+                break
+            }
+        }
     }
 
     private var logoSection: some View {
@@ -161,9 +177,7 @@ struct PermissionsOnboardingView: View {
         } else {
             locationService.requestPermission()
         }
-        locationService.startUpdating()
-        locationGranted = true
-        withAnimation(.spring(response: 0.4)) { currentStep = 1 }
+        // Advance only after `authorizationStatus` updates (see onChange above).
     }
 
     private func requestNotifications() {

@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreLocation
 
 struct RiderActiveRideView: View {
     let ride: Ride
@@ -6,6 +7,7 @@ struct RiderActiveRideView: View {
     var presentChatOnAppear: Bool = false
 
     @EnvironmentObject private var rideService: RideService
+    @EnvironmentObject private var locationService: LocationService
 
     /// Canonical Firestore document for this screen's `ride.id` (preferred over global `activeRide`).
     @State private var documentRide: Ride?
@@ -36,6 +38,8 @@ struct RiderActiveRideView: View {
     @State private var estimatedSpeedKmh: Double = 0
     @State private var lastDriverLoc: LatLng?
     @State private var lastDriverLocTime: Date?
+    @State private var lastCustomerLocationUpload: Date?
+    @State private var lastCustomerLocationUploaded: LatLng?
 
     // Camera follow state (mirrors the driver-side pattern)
     @State private var isFollowingDriver = true
@@ -96,10 +100,14 @@ struct RiderActiveRideView: View {
             }
         }
         .onAppear {
+            locationService.startHighAccuracyUpdates()
             if presentChatOnAppear, !didPresentChatFromPush {
                 didPresentChatFromPush = true
                 showChat = true
             }
+        }
+        .onDisappear {
+            locationService.startUpdating()
         }
         .sheet(isPresented: $showShareSheet) {
             ShareSheet(items: shareItems)
@@ -163,6 +171,10 @@ struct RiderActiveRideView: View {
             if newStatus == .accepted {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             }
+        }
+        .onReceive(locationService.$lastLocation) { location in
+            guard let location else { return }
+            publishCustomerLocationIfNeeded(location)
         }
         // Firestore document listener: keeps status / driver / location in sync for this ride id
         // even when global `activeRide` points at a different row or is temporarily nil.
@@ -517,6 +529,26 @@ struct RiderActiveRideView: View {
         }
     }
 
+    private func publishCustomerLocationIfNeeded(_ location: CLLocation) {
+        guard currentRide.status == .accepted || currentRide.status == .arrived else { return }
+        let latLng = LatLng(
+            latitude: location.coordinate.latitude,
+            longitude: location.coordinate.longitude
+        )
+
+        if let last = lastCustomerLocationUploaded, let lastTime = lastCustomerLocationUpload {
+            let movedM = haversineM(last, latLng)
+            let elapsed = Date().timeIntervalSince(lastTime)
+            if movedM < 15, elapsed < 5 { return }
+        }
+
+        lastCustomerLocationUploaded = latLng
+        lastCustomerLocationUpload = Date()
+        Task {
+            try? await rideService.updateCustomerLocation(currentRide.id, location: latLng)
+        }
+    }
+
     // MARK: - Actions
 
     private func callDriver() {
@@ -579,4 +611,5 @@ struct ShareSheet: UIViewControllerRepresentable {
         )
         .environmentObject(NetworkMonitor.preview)
         .environmentObject(AuthService(repository: InMemoryAuthRepository()))
+        .environmentObject(LocationService())
 }
