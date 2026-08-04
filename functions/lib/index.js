@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.syncDriverAvailability = exports.redeemDiscountCode = exports.sendAdminNotification = exports.onScheduledRideReminder = exports.onRideChatMessageCreated = exports.onRideUpdated = exports.onRideCreated = exports.onReferralApplied = exports.onDiscountCodeCreated = void 0;
+exports.stripeWebhook = exports.confirmCashPayment = exports.captureRidePayment = exports.listPaymentMethods = exports.createStripeSetupIntent = exports.createStripePaymentIntent = exports.syncDriverAvailability = exports.redeemDiscountCode = exports.sendAdminNotification = exports.onScheduledRideReminder = exports.onRideChatMessageCreated = exports.onRideUpdated = exports.onRideCreated = exports.onReferralApplied = exports.onDiscountCodeActivated = exports.onDiscountCodeCreated = void 0;
 const firestore_1 = require("firebase-functions/v2/firestore");
 const firestore_2 = require("firebase-admin/firestore");
 const tasks_1 = require("firebase-functions/v2/tasks");
@@ -53,6 +53,52 @@ exports.onDiscountCodeCreated = (0, firestore_1.onDocumentCreated)("discountCode
     };
     const response = await admin.messaging().sendEachForMulticast(message);
     console.log(`onDiscountCodeCreated: code=${code} — ` +
+        `${response.successCount}/${tokens.length} riders notified.`);
+});
+/**
+ * Triggers whenever an existing discount code document is updated in Firestore.
+ * Sends a push notification to all riders when a code transitions from
+ * inactive to active (i.e. the admin enables a previously disabled code).
+ */
+exports.onDiscountCodeActivated = (0, firestore_1.onDocumentUpdated)("discountCodes/{codeId}", async (event) => {
+    const before = event.data?.before.data();
+    const after = event.data?.after.data();
+    if (!before || !after)
+        return;
+    // Only fire when isActive flips from false → true
+    if (before.isActive === true || after.isActive !== true)
+        return;
+    const code = after.code ?? "";
+    const value = after.value ?? 0;
+    const type = after.type ?? "FIXED";
+    const description = after.description;
+    const payload = (0, notifications_1.buildDiscountCodePayload)(code, value, type, description);
+    const snapshot = await admin
+        .firestore()
+        .collection("users")
+        .where("isCustomer", "==", true)
+        .get();
+    if (snapshot.empty) {
+        console.log("onDiscountCodeActivated: no riders found — skipping.");
+        return;
+    }
+    const tokens = snapshot.docs.flatMap((doc) => {
+        const d = doc.data();
+        const t = (d["fcmTokenCustomer"] ?? d["fcmToken"]);
+        return t ? [t] : [];
+    });
+    if (tokens.length === 0) {
+        console.log("onDiscountCodeActivated: no rider FCM tokens found — skipping.");
+        return;
+    }
+    const message = {
+        notification: { title: payload.title, body: payload.body },
+        data: payload.data,
+        apns: { payload: { aps: { sound: "default", badge: 1 } } },
+        tokens,
+    };
+    const response = await admin.messaging().sendEachForMulticast(message);
+    console.log(`onDiscountCodeActivated: code=${code} — ` +
         `${response.successCount}/${tokens.length} riders notified.`);
 });
 /**
@@ -498,4 +544,11 @@ exports.syncDriverAvailability = (0, scheduler_1.onSchedule)("every 5 minutes", 
     await Promise.all(updates);
     console.log(`syncDriverAvailability: checked ${snapshot.size} driver(s)`);
 });
+var payments_1 = require("./payments");
+Object.defineProperty(exports, "createStripePaymentIntent", { enumerable: true, get: function () { return payments_1.createStripePaymentIntent; } });
+Object.defineProperty(exports, "createStripeSetupIntent", { enumerable: true, get: function () { return payments_1.createStripeSetupIntent; } });
+Object.defineProperty(exports, "listPaymentMethods", { enumerable: true, get: function () { return payments_1.listPaymentMethods; } });
+Object.defineProperty(exports, "captureRidePayment", { enumerable: true, get: function () { return payments_1.captureRidePayment; } });
+Object.defineProperty(exports, "confirmCashPayment", { enumerable: true, get: function () { return payments_1.confirmCashPayment; } });
+Object.defineProperty(exports, "stripeWebhook", { enumerable: true, get: function () { return payments_1.stripeWebhook; } });
 //# sourceMappingURL=index.js.map

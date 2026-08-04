@@ -12,6 +12,7 @@ struct DriverActiveRideView: View {
     @EnvironmentObject private var locationService: LocationService
     @EnvironmentObject private var networkMonitor: NetworkMonitor
     @EnvironmentObject private var authService: AuthService
+    @EnvironmentObject private var paymentService: PaymentService
     @Environment(\.dismiss) private var dismiss
 
     // Navigation state
@@ -63,6 +64,10 @@ struct DriverActiveRideView: View {
     @State private var rideTickerTask: Task<Void, Never>?
     @State private var fareUpdateTask: Task<Void, Never>?
     @State private var customerUser: User?
+
+    // Cash confirmation after ride ends
+    @State private var awaitingCashConfirmation = false
+    @State private var isConfirmingCash = false
 
     // The live ride (updated via Firestore stream)
     private var currentRide: Ride {
@@ -122,6 +127,9 @@ struct DriverActiveRideView: View {
                     .padding(.bottom, mapBottomInset + 120)
                     .padding(.trailing, 16)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+            }
+            if awaitingCashConfirmation {
+                cashConfirmationOverlay
             }
         }
         .onPreferenceChange(BottomOverlayHeightKey.self) { mapBottomInset = $0 }
@@ -883,7 +891,65 @@ struct DriverActiveRideView: View {
                 waitSeconds: totalWaitSeconds,
                 totalFareFinal: finalFare
             )
-            await MainActor.run { dismiss() }
+            await MainActor.run {
+                let method = rideService.activeRide?.paymentMethod ?? currentRide.paymentMethod
+                if method == .cash {
+                    awaitingCashConfirmation = true
+                } else {
+                    dismiss()
+                }
+            }
+        }
+    }
+
+    private var cashConfirmationOverlay: some View {
+        VStack {
+            Spacer()
+            VStack(spacing: 16) {
+                Image(systemName: "banknote.fill")
+                    .font(.system(size: 36))
+                    .foregroundStyle(AppColors.boltGreen)
+                Text("payment.cash.confirm_title")
+                    .font(AppFont.titleSmall())
+                    .foregroundStyle(AppColors.gray900)
+                Text(String(format: String(localized: "payment.cash.confirm_amount"), finalFareLabel))
+                    .font(AppFont.bodyMedium())
+                    .foregroundStyle(AppColors.gray700)
+                TRAPrimaryButton(
+                    title: "payment.cash.confirm_button",
+                    isLoading: isConfirmingCash,
+                    isDisabled: !networkMonitor.isOnline
+                ) {
+                    confirmCashReceived()
+                }
+            }
+            .padding(24)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: AppRadius.r24))
+            .shadow(color: .black.opacity(0.15), radius: 12)
+            .padding(.horizontal, 24)
+            .padding(.bottom, 40)
+        }
+        .background(Color.black.opacity(0.4).ignoresSafeArea())
+    }
+
+    private var finalFareLabel: String {
+        let fare = currentRide.totalFareFinal ?? liveFare
+        return String(format: "SRD %.2f", fare)
+    }
+
+    private func confirmCashReceived() {
+        isConfirmingCash = true
+        Task {
+            do {
+                try await paymentService.confirmCashPayment(rideId: currentRide.id)
+                await MainActor.run {
+                    isConfirmingCash = false
+                    dismiss()
+                }
+            } catch {
+                await MainActor.run { isConfirmingCash = false }
+            }
         }
     }
 

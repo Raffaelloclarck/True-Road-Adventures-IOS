@@ -92,6 +92,7 @@ struct DriverHomeView: View {
     @EnvironmentObject private var rideService: RideService
     @EnvironmentObject private var networkMonitor: NetworkMonitor
     @EnvironmentObject private var pushNavigationStore: PushNavigationStore
+    @EnvironmentObject private var paymentService: PaymentService
 
     @State private var selectedRide: Ride?
     @State private var incomingRide: Ride?
@@ -201,6 +202,7 @@ struct DriverHomeView: View {
                     .environmentObject(rideService)
                     .environmentObject(locationService)
                     .environmentObject(networkMonitor)
+                    .environmentObject(paymentService)
             }
         }
     }

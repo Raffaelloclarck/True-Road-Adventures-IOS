@@ -676,3 +676,12 @@ export const syncDriverAvailability = onSchedule("every 5 minutes", async () => 
   await Promise.all(updates);
   console.log(`syncDriverAvailability: checked ${snapshot.size} driver(s)`);
 });
+
+export {
+  createStripePaymentIntent,
+  createStripeSetupIntent,
+  listPaymentMethods,
+  captureRidePayment,
+  confirmCashPayment,
+  stripeWebhook,
+} from "./payments";

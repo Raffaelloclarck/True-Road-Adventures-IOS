@@ -544,6 +544,24 @@
 "payment.paid" = "Paid";
 "payment.failed" = "Failed";
 "payment.cash" = "Cash";
+"payment.method.title" = "Payment method";
+"payment.method.cash" = "Cash";
+"payment.method.card" = "Card";
+"payment.method.credits" = "Credits";
+"payment.method.cash.hint" = "Pay the driver in cash at the end of the ride.";
+"payment.method.card.hint" = "Your card is authorized now and charged after the ride.";
+"payment.methods.empty" = "No saved cards yet. Add a card for faster checkout.";
+"payment.processing" = "Processing payment…";
+"payment.error.missing_key" = "Payment key is missing. Check app configuration.";
+"payment.error.no_screen" = "No visible screen for payment.";
+"payment.error.stripe_not_linked" = "Stripe SDK is not linked. Add StripePaymentSheet via Swift Package Manager.";
+"payment.error.functions_not_linked" = "Firebase Functions is not linked.";
+"payment.error.invalid_response" = "Invalid response from payment service.";
+"payment.error.canceled" = "Payment was canceled.";
+"payment.error.insufficient_credits" = "Not enough ride credits for this trip.";
+"payment.cash.confirm_title" = "Confirm cash payment";
+"payment.cash.confirm_amount" = "Amount received: %@";
+"payment.cash.confirm_button" = "Cash received";
 
 /* ===== RIDE DETAIL ===== */
 "ride.detail.title" = "Ride details";

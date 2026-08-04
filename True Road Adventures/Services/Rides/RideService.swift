@@ -70,7 +70,7 @@ final class RideService: ObservableObject {
         }
     }
 
-    func requestRide(customerId: String, pickup: LatLng, destination: LatLng, pickupAddress: String?, destinationAddress: String?, scheduledAt: Date?, tier: RideTier = .standard, estimatedFare: Double = FareCalculator.startFare, appliedDiscountCode: String? = nil, discountAmount: Double? = nil) async throws {
+    func requestRide(customerId: String, pickup: LatLng, destination: LatLng, pickupAddress: String?, destinationAddress: String?, scheduledAt: Date?, tier: RideTier = .standard, estimatedFare: Double = FareCalculator.startFare, appliedDiscountCode: String? = nil, discountAmount: Double? = nil, paymentMethod: RidePaymentMethod = .cash) async throws {
         try ensureOnline()
         let ride = try await repository.createRide(
             customerId: customerId,
@@ -82,7 +82,8 @@ final class RideService: ObservableObject {
             tier: tier,
             estimatedFare: estimatedFare,
             appliedDiscountCode: appliedDiscountCode,
-            discountAmount: discountAmount
+            discountAmount: discountAmount,
+            paymentMethod: paymentMethod
         )
         await MainActor.run {
             activeRide = ride
@@ -91,7 +92,8 @@ final class RideService: ObservableObject {
             "customerId": customerId,
             "tier": tier.rawValue,
             "estimatedFare": "\(estimatedFare)",
-            "scheduled": scheduledAt != nil ? "true" : "false"
+            "scheduled": scheduledAt != nil ? "true" : "false",
+            "paymentMethod": paymentMethod.rawValue
         ])
     }
 

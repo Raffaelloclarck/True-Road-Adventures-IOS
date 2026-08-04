@@ -27,6 +27,7 @@ struct RiderApp: App {
                     .environmentObject(container.networkMonitor)
                     .environmentObject(container.pushNavigationStore)
                     .environmentObject(container.discountCodeService)
+                    .environmentObject(container.paymentService)
                     .environment(container.languageManager)
                     .onOpenURL { GIDSignIn.sharedInstance.handle($0) }
             }

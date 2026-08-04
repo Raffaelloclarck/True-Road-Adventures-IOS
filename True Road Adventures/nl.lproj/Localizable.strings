@@ -544,6 +544,24 @@
 "payment.paid" = "Betaald";
 "payment.failed" = "Mislukt";
 "payment.cash" = "Contant";
+"payment.method.title" = "Betaalmethode";
+"payment.method.cash" = "Contant";
+"payment.method.card" = "Kaart";
+"payment.method.credits" = "Tegoed";
+"payment.method.cash.hint" = "Betaal de chauffeur contant aan het einde van de rit.";
+"payment.method.card.hint" = "Je kaart wordt nu geautoriseerd en na de rit afgeschreven.";
+"payment.methods.empty" = "Nog geen opgeslagen kaarten. Voeg een kaart toe voor sneller afrekenen.";
+"payment.processing" = "Betaling verwerken…";
+"payment.error.missing_key" = "Betaalsleutel ontbreekt. Controleer de app-configuratie.";
+"payment.error.no_screen" = "Geen zichtbaar scherm voor betaling.";
+"payment.error.stripe_not_linked" = "Stripe SDK is niet gekoppeld. Voeg StripePaymentSheet toe via Swift Package Manager.";
+"payment.error.functions_not_linked" = "Firebase Functions is niet gekoppeld.";
+"payment.error.invalid_response" = "Ongeldig antwoord van de betalingsservice.";
+"payment.error.canceled" = "Betaling geannuleerd.";
+"payment.error.insufficient_credits" = "Niet genoeg rittengoed voor deze rit.";
+"payment.cash.confirm_title" = "Bevestig contante betaling";
+"payment.cash.confirm_amount" = "Ontvangen bedrag: %@";
+"payment.cash.confirm_button" = "Contant ontvangen";
 
 /* ===== RIDE DETAIL ===== */
 "ride.detail.title" = "Ritdetails";

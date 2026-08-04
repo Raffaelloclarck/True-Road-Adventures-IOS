@@ -9,6 +9,7 @@ struct RiderRideRequestView: View {
     @EnvironmentObject private var locationService: LocationService
     @EnvironmentObject private var authService: AuthService
     @EnvironmentObject private var discountCodeService: DiscountCodeService
+    @EnvironmentObject private var paymentService: PaymentService
     @Environment(LanguageManager.self) private var languageManager: LanguageManager
     @Environment(\.dismiss) private var dismiss
 
@@ -40,6 +41,8 @@ struct RiderRideRequestView: View {
     // Route preview on map
     @State private var previewRoutePoints: [Coordinate2D] = []
     @State private var previewPickupLatLng: LatLng?
+
+    @State private var selectedPaymentMethod: RidePaymentMethod = .cash
 
     init(scheduledAt: Date?, prefillDestination: String? = nil) {
         self.scheduledAt = scheduledAt
@@ -121,6 +124,7 @@ struct RiderRideRequestView: View {
                     addressInputs
                     schedulingRow
                     fareEstimateRow
+                    paymentMethodRow
                     discountCodeRow
                     TRAPrimaryButton(
                         title: "ride.request.button",
@@ -135,6 +139,58 @@ struct RiderRideRequestView: View {
                 .padding(.top, 8)
             }
             .scrollDismissesKeyboard(.interactively)
+        }
+    }
+
+    // MARK: - Payment method
+
+    private var userCredits: Double {
+        authService.state.user?.rideCredits ?? 0
+    }
+
+    private var availablePaymentMethods: [RidePaymentMethod] {
+        var methods: [RidePaymentMethod] = [.cash, .card]
+        if userCredits > 0 { methods.append(.credits) }
+        return methods
+    }
+
+    private var paymentMethodRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("payment.method.title")
+                .font(AppFont.labelMedium())
+                .foregroundStyle(AppColors.gray700)
+
+            HStack(spacing: 8) {
+                ForEach(availablePaymentMethods, id: \.self) { method in
+                    Button {
+                        selectedPaymentMethod = method
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: method.icon)
+                                .font(.system(size: 14))
+                            Text(LocalizedStringKey(method.labelKey))
+                                .font(AppFont.labelSmall())
+                        }
+                        .foregroundStyle(selectedPaymentMethod == method ? .white : AppColors.gray700)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                        .frame(maxWidth: .infinity)
+                        .background(selectedPaymentMethod == method ? AppColors.boltGreen : AppColors.backgroundCard)
+                        .clipShape(RoundedRectangle(cornerRadius: AppRadius.r12))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            if selectedPaymentMethod == .card {
+                Text("payment.method.card.hint")
+                    .font(AppFont.labelSmall())
+                    .foregroundStyle(AppColors.gray500)
+            } else if selectedPaymentMethod == .cash {
+                Text("payment.method.cash.hint")
+                    .font(AppFont.labelSmall())
+                    .foregroundStyle(AppColors.gray500)
+            }
         }
     }
 
@@ -611,6 +667,18 @@ struct RiderRideRequestView: View {
                 credits: userCredits
             )
 
+            var paymentMethod = selectedPaymentMethod
+            if paymentMethod == .credits && estimatedFare > 0 {
+                await MainActor.run {
+                    isLoading = false
+                    errorMessage = String(localized: "payment.error.insufficient_credits")
+                }
+                return
+            }
+            if estimatedFare == 0, creditsToApply > 0 {
+                paymentMethod = .credits
+            }
+
             let pickupLatLng: LatLng
             if let loc = locationService.lastLocation {
                 pickupLatLng = LatLng(latitude: loc.coordinate.latitude, longitude: loc.coordinate.longitude)
@@ -638,11 +706,26 @@ struct RiderRideRequestView: View {
                     tier: .standard,
                     estimatedFare: estimatedFare,
                     appliedDiscountCode: appliedDiscountCode,
-                    discountAmount: appliedDiscountAmount
+                    discountAmount: appliedDiscountAmount,
+                    paymentMethod: paymentMethod
                 )
                 if creditsToApply > 0 {
                     await authService.applyRideCredits(creditsToApply)
                 }
+
+                if paymentMethod == .card, estimatedFare > 0,
+                   let rideId = rideService.activeRide?.id {
+                    do {
+                        try await paymentService.authorizeRidePayment(
+                            rideId: rideId,
+                            amount: estimatedFare
+                        )
+                    } catch {
+                        try? await rideService.updateStatus(rideId, status: .cancelled)
+                        throw error
+                    }
+                }
+
                 await authService.addRecentAddress(destination)
                 await MainActor.run {
                     isLoading = false
@@ -751,4 +834,6 @@ struct RiderRideRequestView: View {
         .environmentObject(NetworkMonitor.preview)
         .environmentObject(LocationService())
         .environmentObject(AuthService(repository: InMemoryAuthRepository()))
+        .environmentObject(DiscountCodeService())
+        .environmentObject(PaymentService(config: AppConfig.load()))
 }
